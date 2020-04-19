@@ -35,7 +35,7 @@ impl Camera {
 }
 
 pub struct Light {
-    position: Point
+    position: Point,
 }
 
 impl Light {
@@ -73,20 +73,34 @@ impl Scene {
     fn brightness(&self, ray: &Ray, distance: f32, thing: &Box<dyn Thing>) -> f32 {
         let hit = ray.at(distance);
         let norm = thing.normal(&hit);
-        self.lights.iter().map(|l| {
-            let n = l.position - hit;
-            let r = Ray::new(hit, n);
-            let filtered = &self.things.iter().map(|e| if identical(e, &thing) { None } else { Some(e.rebox()) }).flatten().collect();
-            if r.intersect(filtered).is_some() {
-                return 0.0
-            }
-            let i = (n / n.norm()) * norm;
-            if i < 0.0 {
-                0.0
-            } else {
-                i
-            }
-        }).sum()
+        self.lights
+            .iter()
+            .map(|l| {
+                let n = l.position - hit;
+                let r = Ray::new(hit, n);
+                let filtered = &self
+                    .things
+                    .iter()
+                    .map(|e| {
+                        if identical(e, &thing) {
+                            None
+                        } else {
+                            Some(e.rebox())
+                        }
+                    })
+                    .flatten()
+                    .collect();
+                if r.intersect(filtered).is_some() {
+                    return 0.0;
+                }
+                let i = (n / n.norm()) * norm;
+                if i < 0.0 {
+                    0.0
+                } else {
+                    i
+                }
+            })
+            .sum()
     }
 
     pub fn render(&self, x: f32, y: f32) -> [u8; 3] {
