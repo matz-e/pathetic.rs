@@ -54,7 +54,17 @@ impl Scene {
         self.things.push(Box::new(thing))
     }
 
-    pub fn render(&self) {}
+    pub fn render(&self, x: f32, y: f32) -> [u8; 3] {
+        let ray = self.camera.view(x, y);
+        let hits: Vec<Option<f32>> = self.things.iter().map(|e| e.hit_by(&ray)).collect();
+        let mut distances: Vec<f32> = hits.into_iter().flatten().collect();
+        distances.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        if distances.is_empty() {
+            return [0, 0, 0]
+        }
+        [255, 255, 255]
+    }
 }
 
 #[cfg(test)]
