@@ -34,15 +34,31 @@ impl Camera {
     }
 }
 
+pub struct Light {
+    position: Point
+}
+
+impl Light {
+    pub fn new(position: Point) -> Self {
+        Light { position }
+    }
+}
+
 pub struct Scene {
     camera: Camera,
+    lights: Vec<Light>,
     things: Vec<Box<dyn Thing>>,
 }
 
+fn identical<T>(a: &T, b: &T) -> bool {
+    a as *const T == b as *const T
+}
+
 impl Scene {
-    pub fn new(camera: Camera) -> Self {
+    pub fn new(camera: Camera, lights: Vec<Light>) -> Self {
         Self {
             camera,
+            lights,
             things: Vec::new(),
         }
     }
@@ -54,16 +70,36 @@ impl Scene {
         self.things.push(Box::new(thing))
     }
 
+    fn brightness(&self, ray: &Ray, distance: f32, thing: &Box<dyn Thing>) -> f32 {
+        let hit = ray.at(distance);
+        let norm = thing.normal(&hit);
+        self.lights.iter().map(|l| {
+            let n = l.position - hit;
+            let r = Ray::new(hit, n);
+            let filtered = &self.things.iter().map(|e| if identical(e, &thing) { None } else { Some(e.rebox()) }).flatten().collect();
+            if r.intersect(filtered).is_some() {
+                return 0.0
+            }
+            let i = (n / n.norm()) * norm;
+            if i < 0.0 {
+                0.0
+            } else {
+                i
+            }
+        }).sum()
+    }
+
     pub fn render(&self, x: f32, y: f32) -> [u8; 3] {
         let ray = self.camera.view(x, y);
-        let hits: Vec<Option<f32>> = self.things.iter().map(|e| e.hit_by(&ray)).collect();
-        let mut distances: Vec<f32> = hits.into_iter().flatten().collect();
-        distances.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let hit = ray.intersect(&self.things);
 
-        if distances.is_empty() {
-            return [0, 0, 0]
+        match hit {
+            None => [0, 0, 0],
+            Some((dist, elem)) => {
+                let c = (255.0 * self.brightness(&ray, dist, elem)) as u8;
+                [c, c, c]
+            }
         }
-        [255, 255, 255]
     }
 }
 

@@ -77,6 +77,12 @@ impl ops::Sub<Point> for Point {
     }
 }
 
+pub trait Thing {
+    fn hit_by(&self, ray: &Ray) -> Option<f32>;
+    fn normal(&self, position: &Point) -> Point;
+    fn rebox(&self) -> Box<dyn Thing>;
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Ray {
     pub base: Point,
@@ -95,6 +101,36 @@ impl Ray {
     pub fn at(&self, d: f32) -> Point {
         self.base + d * self.direction
     }
+
+    pub fn intersect<'a>(
+        &self,
+        things: &'a Vec<Box<dyn Thing>>,
+    ) -> Option<(f32, &'a Box<dyn Thing>)> {
+        things.iter().fold(None, |min, e| {
+            let hit = e.hit_by(&self);
+            match hit {
+                None => min,
+                Some(d) => match min {
+                    None => Some((d, e)),
+                    Some(m) => {
+                        if m.0 < d {
+                            min
+                        } else {
+                            Some((d, e))
+                        }
+                    }
+                },
+            }
+        })
+    }
+}
+
+#[derive(Clone)]
+pub struct Material {
+    specularity: f32,
+    diffusion: f32,
+    ambience: f32,
+    shininess: f32,
 }
 
 #[derive(Clone)]
@@ -107,10 +143,6 @@ impl Sphere {
     pub fn new(center: Point, radius: f32) -> Sphere {
         Sphere { center, radius }
     }
-}
-
-pub trait Thing {
-    fn hit_by(&self, ray: &Ray) -> Option<f32>;
 }
 
 impl Thing for Sphere {
@@ -130,6 +162,15 @@ impl Thing for Sphere {
             return Some(max);
         }
         None
+    }
+
+    fn normal(&self, point: &Point) -> Point {
+        let dist = *point - self.center;
+        dist / dist.norm()
+    }
+
+    fn rebox(&self) -> Box<dyn Thing> {
+        Box::new(self.clone())
     }
 }
 
