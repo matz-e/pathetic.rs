@@ -47,7 +47,7 @@ impl Light {
 pub struct Scene {
     camera: Camera,
     lights: Vec<Light>,
-    things: Vec<Box<dyn Thing>>,
+    things: Vec<Box<dyn BoxedThing>>,
 }
 
 fn identical<T>(a: &T, b: &T) -> bool {
@@ -65,12 +65,12 @@ impl Scene {
 
     pub fn add<T>(&mut self, thing: T)
     where
-        T: Thing + 'static,
+        T: BoxedThing + 'static,
     {
         self.things.push(Box::new(thing))
     }
 
-    fn brightness(&self, ray: &Ray, distance: f32, thing: &Box<dyn Thing>) -> f32 {
+    fn brightness(&self, ray: &Ray, distance: f32, thing: &Box<dyn BoxedThing>) -> f32 {
         let hit = ray.at(distance);
         let norm = thing.normal(&hit);
         self.lights

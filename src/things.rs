@@ -80,7 +80,10 @@ impl ops::Sub<Point> for Point {
 pub trait Thing {
     fn hit_by(&self, ray: &Ray) -> Option<f32>;
     fn normal(&self, position: &Point) -> Point;
-    fn rebox(&self) -> Box<dyn Thing>;
+}
+
+pub trait BoxedThing: Thing {
+    fn rebox(&self) -> Box<dyn BoxedThing>;
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -104,8 +107,8 @@ impl Ray {
 
     pub fn intersect<'a>(
         &self,
-        things: &'a Vec<Box<dyn Thing>>,
-    ) -> Option<(f32, &'a Box<dyn Thing>)> {
+        things: &'a Vec<Box<dyn BoxedThing>>,
+    ) -> Option<(f32, &'a Box<dyn BoxedThing>)> {
         things.iter().fold(None, |min, e| {
             let hit = e.hit_by(&self);
             match hit {
@@ -168,8 +171,10 @@ impl Thing for Sphere {
         let dist = *point - self.center;
         dist / dist.norm()
     }
+}
 
-    fn rebox(&self) -> Box<dyn Thing> {
+impl<T: Thing + Clone + 'static> BoxedThing for T {
+    fn rebox(&self) -> Box<dyn BoxedThing> {
         Box::new(self.clone())
     }
 }
