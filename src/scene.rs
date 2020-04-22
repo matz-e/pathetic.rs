@@ -34,86 +34,63 @@ impl Camera {
     }
 }
 
-pub struct Light {
-    position: Point,
-}
-
-impl Light {
-    pub fn new(position: Point) -> Self {
-        Light { position }
-    }
-}
-
 pub struct Scene {
     camera: Camera,
-    lights: Vec<Light>,
-    things: Vec<Box<dyn BoxedThing>>,
-}
-
-fn identical<T>(a: &T, b: &T) -> bool {
-    a as *const T == b as *const T
+    things: Vec<Box<dyn Thing>>,
 }
 
 impl Scene {
-    pub fn new(camera: Camera, lights: Vec<Light>) -> Self {
+    pub fn new(camera: Camera) -> Self {
         Self {
             camera,
-            lights,
             things: Vec::new(),
         }
     }
 
     pub fn add<T>(&mut self, thing: T)
     where
-        T: BoxedThing + 'static,
+        T: Thing + 'static,
     {
         self.things.push(Box::new(thing))
     }
 
-    fn brightness(&self, ray: &Ray, distance: f32, thing: &Box<dyn BoxedThing>) -> f32 {
-        let hit = ray.at(distance);
-        let norm = thing.normal(&hit);
-        self.lights
-            .iter()
-            .map(|l| {
-                let n = l.position - hit;
-                let r = Ray::new(hit, n);
-                let filtered = &self
-                    .things
-                    .iter()
-                    .map(|e| {
-                        if identical(e, &thing) {
-                            None
-                        } else {
-                            Some(e.rebox())
-                        }
-                    })
-                    .flatten()
-                    .collect();
-                if r.intersect(filtered).is_some() {
-                    return 0.0;
-                }
-                let i = (n / n.norm()) * norm;
-                if i < 0.0 {
-                    0.0
-                } else {
-                    i
-                }
-            })
-            .sum()
+    fn bounce(&self, ray: &Ray, depth: u8, skip: Option<usize>) -> f32 {
+        if depth == 0 {
+            return 0.0
+        }
+
+        let hit = ray.intersect(&self.things, skip);
+        if hit.is_none() {
+            return 0.0
+        }
+
+        let (distance, index) = hit.unwrap();
+        let thing = &self.things[index];
+        let material = thing.material();
+        let impact = ray.at(distance);
+        let normal = thing.normal(&impact);
+
+        let mut intensity = material.emittance;
+        if material.specularity > 0.0 {
+            let reflection = Ray::new(impact, ray.direction - 2.0 * normal * (normal * ray.direction));
+            intensity += material.specularity * self.bounce(&reflection, depth - 1, Some(index));
+        }
+
+        if material.diffusion > 0.0 {
+            let scatter = Ray::new(impact, normal.randomize());
+            intensity += material.diffusion * self.bounce(&scatter, depth - 1, Some(index));
+        }
+
+        intensity
     }
 
     pub fn render(&self, x: f32, y: f32) -> [u8; 3] {
         let ray = self.camera.view(x, y);
-        let hit = ray.intersect(&self.things);
 
-        match hit {
-            None => [0, 0, 0],
-            Some((dist, elem)) => {
-                let c = (255.0 * self.brightness(&ray, dist, elem)) as u8;
-                [c, c, c]
-            }
-        }
+        let intensity = (0..200).fold(0.0, |sum, _i| sum + self.bounce(&ray, 6, None)) / 200.0;
+
+        let v = (255.0 * intensity) as u8;
+        [v, v, v]
     }
 }
 

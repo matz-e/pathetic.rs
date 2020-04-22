@@ -1,4 +1,7 @@
+extern crate rand;
+
 use std::ops;
+use self::rand::prelude::*;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Point {
@@ -12,12 +15,53 @@ impl Point {
         Point { x, y, z }
     }
 
+    pub fn cross(self, other: Point) -> Point {
+        Point::new(
+            self.y * other.z - self.z * other.y,
+            self.z * other.x - self.x * other.z,
+            self.x * other.y - self.y * other.x,
+        )
+    }
+
     pub fn norm_sqr(self) -> f32 {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
 
     pub fn norm(self) -> f32 {
         self.norm_sqr().sqrt()
+    }
+
+    pub fn normalized(self) -> Point {
+        return self / self.norm()
+    }
+
+    pub fn perpendicular(self) -> Point {
+        if self.x <= self.y && self.x <= self.z {
+            return Point::new(0.0, -self.z, self.y).normalized();
+        } else if self.y <= self.x && self.y <= self.z {
+            return Point::new(-self.z, 0.0, self.x).normalized();
+        }
+        Point::new(-self.y, self.x, 0.0).normalized()
+    }
+
+    /// Returns a point randomized in its hemisphere
+    ///
+    /// Uses simple rejection sampling to obtain a point on the hemisphere
+    pub fn randomize(self) -> Point {
+        let a = self.perpendicular();
+        let b = self.cross(a);
+        let mut x = 2.0;
+        let mut y = 2.0;
+        let mut z = 2.0;
+        let mut rng = rand::thread_rng();
+        let full_dist = rand::distributions::Uniform::new_inclusive(-1.0, 1.0);
+        let part_dist = rand::distributions::Uniform::new_inclusive(0.0, 1.0);
+        while x * x + y * y + z * z > 1.0 {
+            x = rng.sample(part_dist);
+            y = rng.sample(full_dist);
+            z = rng.sample(full_dist);
+        }
+        (x * self + y * a + z * b).normalized()
     }
 }
 
@@ -57,6 +101,18 @@ impl ops::Mul<Point> for f32 {
     }
 }
 
+impl ops::Mul<f32> for Point {
+    type Output = Point;
+
+    fn mul(self, other: f32) -> Point {
+        Point {
+            x: other * self.x,
+            y: other * self.y,
+            z: other * self.z,
+        }
+    }
+}
+
 impl ops::Mul<Point> for Point {
     type Output = f32;
 
@@ -77,13 +133,24 @@ impl ops::Sub<Point> for Point {
     }
 }
 
-pub trait Thing {
-    fn hit_by(&self, ray: &Ray) -> Option<f32>;
-    fn normal(&self, position: &Point) -> Point;
+#[derive(Clone, Copy)]
+pub struct Material {
+    pub specularity: f32,
+    pub diffusion: f32,
+    pub emittance: f32,
+    pub color: f32,
 }
 
-pub trait BoxedThing: Thing {
-    fn rebox(&self) -> Box<dyn BoxedThing>;
+impl Material {
+    pub fn new(specularity: f32, diffusion: f32, emittance: f32, color: f32) -> Material {
+        Material { specularity, diffusion, emittance, color }
+    }
+}
+
+pub trait Thing {
+    fn hit_by(&self, ray: &Ray) -> Option<f32>;
+    fn material(&self) -> Material;
+    fn normal(&self, position: &Point) -> Point;
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -105,21 +172,25 @@ impl Ray {
         self.base + d * self.direction
     }
 
-    pub fn intersect<'a>(
+    pub fn intersect(
         &self,
-        things: &'a Vec<Box<dyn BoxedThing>>,
-    ) -> Option<(f32, &'a Box<dyn BoxedThing>)> {
-        things.iter().fold(None, |min, e| {
+        things: &Vec<Box<dyn Thing>>,
+        skip: Option<usize>
+    ) -> Option<(f32, usize)> {
+        things.iter().enumerate().fold(None, |min, (n, e)| {
+            if skip.is_some() && skip.unwrap() == n {
+                return min
+            }
             let hit = e.hit_by(&self);
             match hit {
                 None => min,
                 Some(d) => match min {
-                    None => Some((d, e)),
+                    None => Some((d, n)),
                     Some(m) => {
                         if m.0 < d {
                             min
                         } else {
-                            Some((d, e))
+                            Some((d, n))
                         }
                     }
                 },
@@ -129,22 +200,15 @@ impl Ray {
 }
 
 #[derive(Clone)]
-pub struct Material {
-    specularity: f32,
-    diffusion: f32,
-    ambience: f32,
-    shininess: f32,
-}
-
-#[derive(Clone)]
 pub struct Sphere {
     pub center: Point,
     pub radius: f32,
+    material: Material,
 }
 
 impl Sphere {
-    pub fn new(center: Point, radius: f32) -> Sphere {
-        Sphere { center, radius }
+    pub fn new(center: Point, radius: f32, material: Material) -> Sphere {
+        Sphere { center, radius, material }
     }
 }
 
@@ -167,21 +231,66 @@ impl Thing for Sphere {
         None
     }
 
+    fn material(&self) -> Material {
+        self.material
+    }
+
     fn normal(&self, point: &Point) -> Point {
         let dist = *point - self.center;
         dist / dist.norm()
     }
 }
 
-impl<T: Thing + Clone + 'static> BoxedThing for T {
-    fn rebox(&self) -> Box<dyn BoxedThing> {
-        Box::new(self.clone())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn point_rotations() {
+        let p1 = Point::new(1.0, 0.0, 0.0);
+        let o1 = p1.perpendicular();
+        assert!((o1.norm() - 1.0).abs() < 1.0e-6);
+        assert!((p1 * o1).abs() < 1.0e-6);
+
+        let p2 = Point::new(0.0, 0.5, 0.3).normalized();
+        let o2 = p2.perpendicular();
+        assert!((o2.norm() - 1.0).abs() < 1.0e-6);
+        assert!((p2 * o2).abs() < 1.0e-6);
+
+        let p3 = Point::new(1.0, 0.5, 0.0).normalized();
+        let o3 = p3.perpendicular();
+        assert!((o3.norm() - 1.0).abs() < 1.0e-6);
+        assert!((p3 * o3).abs() < 1.0e-6);
+
+        let p4 = Point::new(1.0, 0.5, 5.0).normalized();
+        let o4 = p4.perpendicular();
+        assert!((o4.norm() - 1.0).abs() < 1.0e-6);
+        assert!((p4 * o4).abs() < 1.0e-6);
+    }
+
+    #[test]
+    fn point_crossed() {
+        let p = Point::new(1.0, 0.1, 0.2).normalized();
+        let o = p.perpendicular();
+        let q = p.cross(o);
+
+        assert!((q.norm() - 1.0).abs() < 1.0e-6);
+        assert!((p * o).abs() < 1.0e-6);
+        assert!((p * q).abs() < 1.0e-6);
+        assert!((o * q).abs() < 1.0e-6);
+    }
+
+    #[test]
+    fn point_randomized() {
+        let p = Point::new(0.0, 0.0, 1.0);
+        for i in 0..10 {
+            let r = p.randomize();
+            assert!(r.x <= 1.0 && r.x >= -1.0);
+            assert!(r.y <= 1.0 && r.y >= -1.0);
+            assert!(r.z <= 1.0);
+            assert!(r.z >= 0.0);
+        }
+    }
 
     #[test]
     fn ray_normalized() {
@@ -191,23 +300,25 @@ mod tests {
 
     #[test]
     fn ray_hits_sphere() {
+        let m = Material::new(0.0, 0.0, 0.0, 0.0);
         let r = Ray::new(Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0));
-        let s = Sphere::new(Point::new(1.0, 0.0, 0.0), 0.5);
+        let s = Sphere::new(Point::new(1.0, 0.0, 0.0), 0.5, m);
         assert_eq!(s.hit_by(&r), Some(0.5));
 
         let r = Ray::new(Point::new(0.0, 0.5, 0.0), Point::new(1.0, 0.0, 0.0));
-        let s = Sphere::new(Point::new(1.0, 0.0, 0.0), 0.5);
+        let s = Sphere::new(Point::new(1.0, 0.0, 0.0), 0.5, m);
         assert_eq!(s.hit_by(&r), Some(1.0));
     }
 
     #[test]
     fn ray_misses_sphere() {
+        let m = Material::new(0.0, 0.0, 0.0, 0.0);
         let r = Ray::new(Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0));
-        let s = Sphere::new(Point::new(-1.0, 0.0, 0.0), 0.5);
+        let s = Sphere::new(Point::new(-1.0, 0.0, 0.0), 0.5, m);
         assert_eq!(s.hit_by(&r), None);
 
         let r = Ray::new(Point::new(0.0, 0.0, 0.0), Point::new(1.0, 1.0, 0.0));
-        let s = Sphere::new(Point::new(1.0, 0.0, 0.0), 0.5);
+        let s = Sphere::new(Point::new(1.0, 0.0, 0.0), 0.5, m);
         assert_eq!(s.hit_by(&r), None);
     }
 }

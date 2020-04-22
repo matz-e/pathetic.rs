@@ -11,17 +11,19 @@ fn main() {
     let x = Point::new(2.0, 0.0, 0.0);
     let y = Point::new(0.0, 2.0, 0.0);
     let mut scene = Scene::new(
-        Camera::new(normal, x, y, 2.0),
-        vec![Light::new(Point::new(-2.0, -5.0, -5.0))],
+        Camera::new(normal, x, y, 2.0)
     );
 
-    scene.add(Sphere::new(Point::new(-1.0, 0.0, 1.0), 0.1));
-    scene.add(Sphere::new(Point::new(0.0, -1.0, 0.0), 0.3));
-    scene.add(Sphere::new(Point::new(0.0, 0.0, 1.0), 0.3));
-    scene.add(Sphere::new(Point::new(1.0, 0.0, 1.0), 0.5));
+    let m = Material::new(0.5, 0.9, 0.0, 1.0);
+    let l = Material::new(0.0, 0.1, 1.0, 1.0);
+    scene.add(Sphere::new(Point::new(-1.0, 0.0, 1.0), 0.1, m));
+    scene.add(Sphere::new(Point::new(0.0, -1.0, 0.0), 0.3, m));
+    scene.add(Sphere::new(Point::new(0.0, 0.0, 1.0), 0.3, m));
+    scene.add(Sphere::new(Point::new(1.0, 0.0, 1.0), 0.5, m));
+    scene.add(Sphere::new(Point::new(-5.0, -5.0, -5.0), 5.0, l));
 
-    let width = 800;
-    let height = 800;
+    let width = 400;
+    let height = 400;
     let mut imgbuf: image::RgbImage = image::ImageBuffer::new(width, height);
 
     imgbuf.enumerate_pixels_mut().for_each(|(x, y, pixel)| {
