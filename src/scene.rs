@@ -56,23 +56,26 @@ impl Scene {
 
     fn bounce(&self, ray: &Ray, depth: u8, skip: Option<usize>) -> f32 {
         if depth == 0 {
-            return 0.0
+            return 0.0;
         }
 
         let hit = ray.intersect(&self.things, skip);
         if hit.is_none() {
-            return 0.0
+            return 0.0;
         }
 
         let (distance, index) = hit.unwrap();
         let thing = &self.things[index];
         let material = thing.material();
         let impact = ray.at(distance);
-        let normal = thing.normal(&impact);
+        let normal = thing.normal(&impact, &ray.direction);
 
         let mut intensity = material.emittance;
         if material.specularity > 0.0 {
-            let reflection = Ray::new(impact, ray.direction - 2.0 * normal * (normal * ray.direction));
+            let reflection = Ray::new(
+                impact,
+                ray.direction - 2.0 * normal * (normal * ray.direction),
+            );
             intensity += material.specularity * self.bounce(&reflection, depth - 1, Some(index));
         }
 
