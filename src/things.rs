@@ -31,6 +31,8 @@ pub static UNIT_Z: Point = Point {
     z: 1.0,
 };
 
+pub type Color = Point;
+
 impl Point {
     pub fn new(x: f32, y: f32, z: f32) -> Point {
         Point { x, y, z }
@@ -44,6 +46,10 @@ impl Point {
         )
     }
 
+    pub fn mul(self, other: Point) -> Point {
+        Point::new(self.x * other.x, self.y * other.y, self.z * other.z)
+    }
+
     pub fn norm_sqr(self) -> f32 {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
@@ -53,7 +59,7 @@ impl Point {
     }
 
     pub fn normalized(self) -> Point {
-        return self / self.norm();
+        self / self.norm()
     }
 
     pub fn perpendicular(self) -> Point {
@@ -91,6 +97,16 @@ impl ops::Add<Point> for Point {
 
     fn add(self, other: Point) -> Point {
         Point {
+            x: self.x + other.x,
+            y: self.y + other.y,
+            z: self.z + other.z,
+        }
+    }
+}
+
+impl ops::AddAssign<Point> for Point {
+    fn add_assign(&mut self, other: Point) {
+        *self = Point {
             x: self.x + other.x,
             y: self.y + other.y,
             z: self.z + other.z,
@@ -171,11 +187,11 @@ pub struct Material {
     pub specularity: f32,
     pub diffusion: f32,
     pub emittance: f32,
-    pub color: f32,
+    pub color: Color,
 }
 
 impl Material {
-    pub fn new(specularity: f32, diffusion: f32, emittance: f32, color: f32) -> Material {
+    pub fn new(specularity: f32, diffusion: f32, emittance: f32, color: Point) -> Material {
         Material {
             specularity,
             diffusion,
