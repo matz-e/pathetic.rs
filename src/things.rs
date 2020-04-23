@@ -4,54 +4,38 @@ use self::rand::prelude::*;
 use std::ops;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Point {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-}
-
-pub static ORIGIN: Point = Point {
-    x: 0.0,
-    y: 0.0,
-    z: 0.0,
-};
-pub static UNIT_X: Point = Point {
-    x: 1.0,
-    y: 0.0,
-    z: 0.0,
-};
-pub static UNIT_Y: Point = Point {
-    x: 0.0,
-    y: 1.0,
-    z: 0.0,
-};
-pub static UNIT_Z: Point = Point {
-    x: 0.0,
-    y: 0.0,
-    z: 1.0,
-};
-
-pub type Color = Point;
+pub struct Point(f32, f32, f32);
 
 impl Point {
     pub fn new(x: f32, y: f32, z: f32) -> Point {
-        Point { x, y, z }
+        Point(x, y, z)
+    }
+
+    #[inline]
+    pub fn x(&self) -> f32 {
+        self.0
+    }
+
+    #[inline]
+    pub fn y(&self) -> f32 {
+        self.1
+    }
+
+    #[inline]
+    pub fn z(&self) -> f32 {
+        self.2
     }
 
     pub fn cross(self, other: Point) -> Point {
         Point::new(
-            self.y * other.z - self.z * other.y,
-            self.z * other.x - self.x * other.z,
-            self.x * other.y - self.y * other.x,
+            self.1 * other.2 - self.2 * other.1,
+            self.2 * other.0 - self.0 * other.2,
+            self.0 * other.1 - self.1 * other.0,
         )
     }
 
-    pub fn mul(self, other: Point) -> Point {
-        Point::new(self.x * other.x, self.y * other.y, self.z * other.z)
-    }
-
     pub fn norm_sqr(self) -> f32 {
-        self.x * self.x + self.y * self.y + self.z * self.z
+        self.0 * self.0 + self.1 * self.1 + self.2 * self.2
     }
 
     pub fn norm(self) -> f32 {
@@ -63,12 +47,12 @@ impl Point {
     }
 
     pub fn perpendicular(self) -> Point {
-        if self.x.abs() <= self.y.abs() && self.x.abs() <= self.z.abs() {
-            return Point::new(0.0, -self.z, self.y).normalized();
-        } else if self.y.abs() <= self.x.abs() && self.y.abs() <= self.z.abs() {
-            return Point::new(-self.z, 0.0, self.x).normalized();
+        if self.0.abs() <= self.1.abs() && self.0.abs() <= self.2.abs() {
+            return Point::new(0.0, -self.2, self.1).normalized();
+        } else if self.1.abs() <= self.0.abs() && self.1.abs() <= self.2.abs() {
+            return Point::new(-self.2, 0.0, self.0).normalized();
         }
-        Point::new(-self.y, self.x, 0.0).normalized()
+        Point::new(-self.1, self.0, 0.0).normalized()
     }
 
     /// Returns a point randomized in its hemisphere
@@ -92,95 +76,113 @@ impl Point {
     }
 }
 
-impl ops::Add<Point> for Point {
-    type Output = Point;
-
-    fn add(self, other: Point) -> Point {
-        Point {
-            x: self.x + other.x,
-            y: self.y + other.y,
-            z: self.z + other.z,
-        }
-    }
-}
-
-impl ops::AddAssign<Point> for Point {
-    fn add_assign(&mut self, other: Point) {
-        *self = Point {
-            x: self.x + other.x,
-            y: self.y + other.y,
-            z: self.z + other.z,
-        }
-    }
-}
-
-impl ops::Div<f32> for Point {
-    type Output = Point;
-
-    fn div(self, num: f32) -> Point {
-        Point {
-            x: self.x / num,
-            y: self.y / num,
-            z: self.z / num,
-        }
-    }
-}
-
-impl ops::Mul<Point> for f32 {
-    type Output = Point;
-
-    fn mul(self, other: Point) -> Point {
-        Point {
-            x: self * other.x,
-            y: self * other.y,
-            z: self * other.z,
-        }
-    }
-}
-
-impl ops::Neg for Point {
-    type Output = Point;
-
-    fn neg(self) -> Point {
-        Point {
-            x: -self.x,
-            y: -self.y,
-            z: -self.z,
-        }
-    }
-}
-
-impl ops::Mul<f32> for Point {
-    type Output = Point;
-
-    fn mul(self, other: f32) -> Point {
-        Point {
-            x: other * self.x,
-            y: other * self.y,
-            z: other * self.z,
-        }
-    }
-}
-
 impl ops::Mul<Point> for Point {
     type Output = f32;
 
     fn mul(self, other: Point) -> f32 {
-        self.x * other.x + self.y * other.y + self.z * other.z
+        self.0 * other.0 + self.1 * other.1 + self.2 * other.2
     }
 }
 
-impl ops::Sub<Point> for Point {
-    type Output = Point;
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Color(f32, f32, f32);
 
-    fn sub(self, other: Point) -> Point {
-        Point {
-            x: self.x - other.x,
-            y: self.y - other.y,
-            z: self.z - other.z,
+impl Color {
+    pub fn new(r: f32, g: f32, b: f32) -> Color {
+        Color(r, g, b)
+    }
+
+    #[inline]
+    pub fn r(&self) -> f32 {
+        self.0
+    }
+
+    #[inline]
+    pub fn g(&self) -> f32 {
+        self.1
+    }
+
+    #[inline]
+    pub fn b(&self) -> f32 {
+        self.2
+    }
+}
+
+impl ops::Mul<Color> for Color {
+    type Output = Color;
+
+    fn mul(self, other: Color) -> Color {
+        Color(self.0 * &other.0, self.1 * &other.1, self.2 * &other.2)
+    }
+}
+
+macro_rules! operations {
+    ($t:ident) => {
+        impl ops::Add<$t> for $t {
+            type Output = $t;
+
+            fn add(self, other: $t) -> $t {
+                $t(self.0 + other.0, self.1 + other.1, self.2 + other.2)
+            }
         }
-    }
+
+        impl ops::AddAssign<$t> for $t {
+            fn add_assign(&mut self, other: $t) {
+                *self = $t(self.0 + other.0, self.1 + other.1, self.2 + other.2)
+            }
+        }
+
+        impl ops::Div<f32> for $t {
+            type Output = $t;
+
+            fn div(self, num: f32) -> $t {
+                $t(self.0 / num, self.1 / num, self.2 / num)
+            }
+        }
+
+        impl ops::Mul<$t> for f32 {
+            type Output = $t;
+
+            fn mul(self, other: $t) -> $t {
+                $t(self * other.0, self * other.1, self * other.2)
+            }
+        }
+
+        impl ops::Mul<f32> for $t {
+            type Output = $t;
+
+            fn mul(self, other: f32) -> $t {
+                $t(other * self.0, other * self.1, other * self.2)
+            }
+        }
+
+        impl ops::Neg for $t {
+            type Output = $t;
+
+            fn neg(self) -> $t {
+                $t(-self.0, -self.1, -self.2)
+            }
+        }
+
+        impl ops::Sub<$t> for $t {
+            type Output = $t;
+
+            fn sub(self, other: $t) -> $t {
+                $t(self.0 - other.0, self.1 - other.1, self.2 - other.2)
+            }
+        }
+    };
 }
+
+operations![Color];
+operations![Point];
+
+pub static ORIGIN: Point = Point(0.0, 0.0, 0.0);
+pub static UNIT_X: Point = Point(1.0, 0.0, 0.0);
+pub static UNIT_Y: Point = Point(0.0, 1.0, 0.0);
+pub static UNIT_Z: Point = Point(0.0, 0.0, 1.0);
+
+pub static BLACK: Color = Color(0.0, 0.0, 0.0);
 
 #[derive(Clone, Copy)]
 pub struct Material {
@@ -191,7 +193,7 @@ pub struct Material {
 }
 
 impl Material {
-    pub fn new(specularity: f32, diffusion: f32, emittance: f32, color: Point) -> Material {
+    pub fn new(specularity: f32, diffusion: f32, emittance: f32, color: Color) -> Material {
         Material {
             specularity,
             diffusion,
@@ -412,10 +414,10 @@ mod tests {
         let p = Point::new(0.0, 0.0, 1.0);
         for _i in 0..10 {
             let r = p.randomize();
-            assert!((-1.0..=1.0).contains(&r.x));
-            assert!((-1.0..=1.0).contains(&r.y));
-            assert!(r.z <= 1.0);
-            assert!(r.z >= 0.0);
+            assert!((-1.0..=1.0).contains(&r.x()));
+            assert!((-1.0..=1.0).contains(&r.y()));
+            assert!(r.z() <= 1.0);
+            assert!(r.z() >= 0.0);
         }
     }
 
@@ -427,7 +429,7 @@ mod tests {
 
     #[test]
     fn ray_hits_sphere() {
-        let m = Material::new(0.0, 0.0, 0.0, ORIGIN);
+        let m = Material::new(0.0, 0.0, 0.0, BLACK);
         let r = Ray::new(Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0));
         let s = Sphere::new(Point::new(1.0, 0.0, 0.0), 0.5, m);
         assert_eq!(s.hit_by(&r), Some(0.5));
@@ -439,7 +441,7 @@ mod tests {
 
     #[test]
     fn ray_misses_sphere() {
-        let m = Material::new(0.0, 0.0, 0.0, ORIGIN);
+        let m = Material::new(0.0, 0.0, 0.0, BLACK);
         let r = Ray::new(Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0));
         let s = Sphere::new(Point::new(-1.0, 0.0, 0.0), 0.5, m);
         assert_eq!(s.hit_by(&r), None);
@@ -451,7 +453,7 @@ mod tests {
 
     #[test]
     fn ray_hits_rectangle() {
-        let m = Material::new(0.0, 0.0, 0.0, ORIGIN);
+        let m = Material::new(0.0, 0.0, 0.0, BLACK);
         let r = Ray::new(-UNIT_X, UNIT_X);
         let r2 = Rectangle::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
         assert_eq!(r2.hit_by(&r), Some(6.0));
@@ -466,12 +468,12 @@ mod tests {
         let r2 = Rectangle::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
         let t = r2.hit_by(&r).unwrap();
         assert!(t > 6.0);
-        assert_eq!(r.at(t).x, 5.0);
+        assert_eq!(r.at(t).x(), 5.0);
     }
 
     #[test]
     fn ray_misses_rectangle() {
-        let m = Material::new(0.0, 0.0, 0.0, ORIGIN);
+        let m = Material::new(0.0, 0.0, 0.0, BLACK);
         let r = Ray::new(ORIGIN, -UNIT_X);
         let r2 = Rectangle::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
         assert_eq!(r2.hit_by(&r), None);
@@ -487,7 +489,7 @@ mod tests {
 
     #[test]
     fn normal_for_rectangle() {
-        let m = Material::new(0.0, 0.0, 0.0, ORIGIN);
+        let m = Material::new(0.0, 0.0, 0.0, BLACK);
         let r = Rectangle::new(ORIGIN, 1.0 * UNIT_Y, 1.0 * UNIT_Z, m);
         let n = r.normal(&ORIGIN, &UNIT_X);
         assert_eq!(n, -UNIT_X);

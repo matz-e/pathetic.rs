@@ -61,12 +61,12 @@ impl Scene {
 
     fn bounce(&self, ray: &Ray, depth: usize, skip: Option<usize>) -> Color {
         if depth == 0 {
-            return ORIGIN;
+            return BLACK;
         }
 
         let hit = ray.intersect(&self.things, skip);
         if hit.is_none() {
-            return ORIGIN;
+            return BLACK;
         }
 
         let (distance, index) = hit.unwrap();
@@ -81,16 +81,15 @@ impl Scene {
                 impact,
                 ray.direction - 2.0 * normal * (normal * ray.direction),
             );
-            intensity += material
-                .color
-                .mul(material.specularity * self.bounce(&reflection, depth - 1, Some(index)));
+            intensity += material.color
+                * material.specularity
+                * self.bounce(&reflection, depth - 1, Some(index));
         }
 
         if material.diffusion > 0.0 {
             let scatter = Ray::new(impact, normal.randomize());
-            intensity += material
-                .color
-                .mul(material.diffusion * self.bounce(&scatter, depth - 1, Some(index)));
+            intensity +=
+                material.color * material.diffusion * self.bounce(&scatter, depth - 1, Some(index));
         }
 
         intensity
@@ -107,13 +106,13 @@ impl Scene {
     pub fn render(&self, x: f32, y: f32, samples: usize, bounces: usize) -> [u8; 3] {
         let ray = self.camera.view(x, y);
 
-        let intensity = (0..samples).fold(ORIGIN, |sum, _i| sum + self.bounce(&ray, bounces, None))
+        let intensity = (0..samples).fold(BLACK, |sum, _i| sum + self.bounce(&ray, bounces, None))
             / samples as f32;
 
         [
-            (255.0 * intensity.x) as u8,
-            (255.0 * intensity.y) as u8,
-            (255.0 * intensity.z) as u8,
+            (255.0 * intensity.r()) as u8,
+            (255.0 * intensity.g()) as u8,
+            (255.0 * intensity.b()) as u8,
         ]
     }
 }

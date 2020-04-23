@@ -23,8 +23,8 @@ fn main() {
     scene.add(Sphere::new(Point::new(-5.0, -5.0, -5.0), 5.0, l));
     scene.add(Rectangle::new(
         Point::new(-2.0, 2.0, -1.0),
-        4.0 * UNIT_X,
-        4.0 * UNIT_Z,
+        Point::new(4.0, 0.0, 0.0),
+        Point::new(0.0, 0.0, 4.0),
         greenish,
     ));
 
