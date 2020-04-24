@@ -352,10 +352,10 @@ mod tests {
         let p = Point::new(0.0, 0.0, 1.0);
         for _i in 0..10 {
             let r = p.randomize();
-            assert!((-1.0..=1.0).contains(&r.x()));
-            assert!((-1.0..=1.0).contains(&r.y()));
-            assert!(r.z() <= 1.0);
-            assert!(r.z() >= 0.0);
+            assert!((-1.0..=1.0).contains(&r.x));
+            assert!((-1.0..=1.0).contains(&r.y));
+            assert!(r.z <= 1.0);
+            assert!(r.z >= 0.0);
         }
     }
 
@@ -406,7 +406,7 @@ mod tests {
         let r2 = Rhomboid::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
         let t = r2.hit_by(&r).unwrap();
         assert!(t > 6.0);
-        assert_eq!(r.at(t).x(), 5.0);
+        assert_eq!(r.at(t).x, 5.0);
     }
 
     #[test]
