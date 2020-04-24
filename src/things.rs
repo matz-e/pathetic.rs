@@ -244,7 +244,7 @@ impl Thing for Sphere {
     }
 }
 
-pub struct Rectangle {
+pub struct Rhomboid {
     base: Point,
     x: Point,
     y: Point,
@@ -254,12 +254,12 @@ pub struct Rectangle {
     material: Material,
 }
 
-impl Rectangle {
-    pub fn new(base: Point, x: Point, y: Point, material: Material) -> Rectangle {
+impl Rhomboid {
+    pub fn new(base: Point, x: Point, y: Point, material: Material) -> Rhomboid {
         let normal = x.cross(y).normalized();
         let width = x.norm();
         let height = y.norm();
-        Rectangle {
+        Rhomboid {
             base,
             x: x / width,
             y: y / height,
@@ -271,7 +271,7 @@ impl Rectangle {
     }
 }
 
-impl Thing for Rectangle {
+impl Thing for Rhomboid {
     fn hit_by(&self, ray: &Ray) -> Option<f32> {
         let conn = self.base - ray.base;
         let in_plane = self.n * conn * self.n - conn;
@@ -393,17 +393,17 @@ mod tests {
     fn ray_hits_rectangle() {
         let m = Material::new(0.0, 0.0, 0.0, BLACK);
         let r = Ray::new(-UNIT_X, UNIT_X);
-        let r2 = Rectangle::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
+        let r2 = Rhomboid::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
         assert_eq!(r2.hit_by(&r), Some(6.0));
 
-        let r2 = Rectangle::new(Point::new(4.0, -0.1, -0.1), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
+        let r2 = Rhomboid::new(Point::new(4.0, -0.1, -0.1), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
         assert_eq!(r2.hit_by(&r), Some(5.0));
 
-        let r2 = Rectangle::new(Point::new(5.0, -1.9, -1.9), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
+        let r2 = Rhomboid::new(Point::new(5.0, -1.9, -1.9), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
         assert_eq!(r2.hit_by(&r), Some(6.0));
 
         let r = Ray::new(-UNIT_X, Point::new(1.0, 0.1, 0.1));
-        let r2 = Rectangle::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
+        let r2 = Rhomboid::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
         let t = r2.hit_by(&r).unwrap();
         assert!(t > 6.0);
         assert_eq!(r.at(t).x(), 5.0);
@@ -413,22 +413,22 @@ mod tests {
     fn ray_misses_rectangle() {
         let m = Material::new(0.0, 0.0, 0.0, BLACK);
         let r = Ray::new(ORIGIN, -UNIT_X);
-        let r2 = Rectangle::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
+        let r2 = Rhomboid::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
         assert_eq!(r2.hit_by(&r), None);
 
         let r = Ray::new(ORIGIN, UNIT_X);
-        let r2 = Rectangle::new(Point::new(5.0, 1.0, 1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
+        let r2 = Rhomboid::new(Point::new(5.0, 1.0, 1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
         assert_eq!(r2.hit_by(&r), None);
 
         let r = Ray::new(ORIGIN, UNIT_Z);
-        let r2 = Rectangle::new(Point::new(5.0, 1.0, 1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
+        let r2 = Rhomboid::new(Point::new(5.0, 1.0, 1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
         assert_eq!(r2.hit_by(&r), None);
     }
 
     #[test]
     fn normal_for_rectangle() {
         let m = Material::new(0.0, 0.0, 0.0, BLACK);
-        let r = Rectangle::new(ORIGIN, 1.0 * UNIT_Y, 1.0 * UNIT_Z, m);
+        let r = Rhomboid::new(ORIGIN, 1.0 * UNIT_Y, 1.0 * UNIT_Z, m);
         let n = r.normal(&ORIGIN, &UNIT_X);
         assert_eq!(n, -UNIT_X);
     }

@@ -21,7 +21,7 @@ fn main() {
     scene.add(Sphere::new(Point::new(0.0, 0.0, 1.0), 0.3, reddish));
     scene.add(Sphere::new(Point::new(1.0, 0.0, 1.0), 0.5, grayish));
     scene.add(Sphere::new(Point::new(-5.0, -5.0, -5.0), 5.0, l));
-    scene.add(Rectangle::new(
+    scene.add(Rhomboid::new(
         Point::new(-2.0, 2.0, -1.0),
         Point::new(4.0, 0.0, 0.0),
         Point::new(0.0, 0.0, 4.0),
