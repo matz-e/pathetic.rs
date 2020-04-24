@@ -110,9 +110,9 @@ impl Scene {
             / samples as f32;
 
         [
-            (255.0 * intensity.r()) as u8,
-            (255.0 * intensity.g()) as u8,
-            (255.0 * intensity.b()) as u8,
+            (255.0 * intensity.r) as u8,
+            (255.0 * intensity.g) as u8,
+            (255.0 * intensity.b) as u8,
         ]
     }
 }

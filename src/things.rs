@@ -1,41 +1,31 @@
 extern crate rand;
 
-use self::rand::prelude::*;
+use pathetic_derive::*;
+use rand::prelude::*;
 use std::ops;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Point(f32, f32, f32);
+#[derive(Clone, Copy, Debug, PartialEq, PartialOps)]
+pub struct Point {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+}
 
 impl Point {
     pub fn new(x: f32, y: f32, z: f32) -> Point {
-        Point(x, y, z)
-    }
-
-    #[inline]
-    pub fn x(&self) -> f32 {
-        self.0
-    }
-
-    #[inline]
-    pub fn y(&self) -> f32 {
-        self.1
-    }
-
-    #[inline]
-    pub fn z(&self) -> f32 {
-        self.2
+        Point { x, y, z }
     }
 
     pub fn cross(self, other: Point) -> Point {
         Point::new(
-            self.1 * other.2 - self.2 * other.1,
-            self.2 * other.0 - self.0 * other.2,
-            self.0 * other.1 - self.1 * other.0,
+            self.y * other.z - self.z * other.y,
+            self.z * other.x - self.x * other.z,
+            self.x * other.y - self.y * other.x,
         )
     }
 
     pub fn norm_sqr(self) -> f32 {
-        self.0 * self.0 + self.1 * self.1 + self.2 * self.2
+        self.x * self.x + self.y * self.y + self.z * self.z
     }
 
     pub fn norm(self) -> f32 {
@@ -47,12 +37,12 @@ impl Point {
     }
 
     pub fn perpendicular(self) -> Point {
-        if self.0.abs() <= self.1.abs() && self.0.abs() <= self.2.abs() {
-            return Point::new(0.0, -self.2, self.1).normalized();
-        } else if self.1.abs() <= self.0.abs() && self.1.abs() <= self.2.abs() {
-            return Point::new(-self.2, 0.0, self.0).normalized();
+        if self.x.abs() <= self.y.abs() && self.x.abs() <= self.z.abs() {
+            return Point::new(0.0, -self.z, self.y).normalized();
+        } else if self.y.abs() <= self.x.abs() && self.y.abs() <= self.z.abs() {
+            return Point::new(-self.z, 0.0, self.x).normalized();
         }
-        Point::new(-self.1, self.0, 0.0).normalized()
+        Point::new(-self.y, self.x, 0.0).normalized()
     }
 
     /// Returns a point randomized in its hemisphere
@@ -80,31 +70,20 @@ impl ops::Mul<Point> for Point {
     type Output = f32;
 
     fn mul(self, other: Point) -> f32 {
-        self.0 * other.0 + self.1 * other.1 + self.2 * other.2
+        self.x * other.x + self.y * other.y + self.z * other.z
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Color(f32, f32, f32);
+#[derive(Clone, Copy, Debug, PartialEq, PartialOps)]
+pub struct Color {
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+}
 
 impl Color {
     pub fn new(r: f32, g: f32, b: f32) -> Color {
-        Color(r, g, b)
-    }
-
-    #[inline]
-    pub fn r(&self) -> f32 {
-        self.0
-    }
-
-    #[inline]
-    pub fn g(&self) -> f32 {
-        self.1
-    }
-
-    #[inline]
-    pub fn b(&self) -> f32 {
-        self.2
+        Color { r, g, b }
     }
 }
 
@@ -112,77 +91,36 @@ impl ops::Mul<Color> for Color {
     type Output = Color;
 
     fn mul(self, other: Color) -> Color {
-        Color(self.0 * &other.0, self.1 * &other.1, self.2 * &other.2)
+        Color::new(self.r * &other.r, self.g * &other.g, self.b * &other.b)
     }
 }
 
-macro_rules! operations {
-    ($t:ident) => {
-        impl ops::Add<$t> for $t {
-            type Output = $t;
+pub static ORIGIN: Point = Point {
+    x: 0.0,
+    y: 0.0,
+    z: 0.0,
+};
+pub static UNIT_X: Point = Point {
+    x: 1.0,
+    y: 0.0,
+    z: 0.0,
+};
+pub static UNIT_Y: Point = Point {
+    x: 0.0,
+    y: 1.0,
+    z: 0.0,
+};
+pub static UNIT_Z: Point = Point {
+    x: 0.0,
+    y: 0.0,
+    z: 1.0,
+};
 
-            fn add(self, other: $t) -> $t {
-                $t(self.0 + other.0, self.1 + other.1, self.2 + other.2)
-            }
-        }
-
-        impl ops::AddAssign<$t> for $t {
-            fn add_assign(&mut self, other: $t) {
-                *self = $t(self.0 + other.0, self.1 + other.1, self.2 + other.2)
-            }
-        }
-
-        impl ops::Div<f32> for $t {
-            type Output = $t;
-
-            fn div(self, num: f32) -> $t {
-                $t(self.0 / num, self.1 / num, self.2 / num)
-            }
-        }
-
-        impl ops::Mul<$t> for f32 {
-            type Output = $t;
-
-            fn mul(self, other: $t) -> $t {
-                $t(self * other.0, self * other.1, self * other.2)
-            }
-        }
-
-        impl ops::Mul<f32> for $t {
-            type Output = $t;
-
-            fn mul(self, other: f32) -> $t {
-                $t(other * self.0, other * self.1, other * self.2)
-            }
-        }
-
-        impl ops::Neg for $t {
-            type Output = $t;
-
-            fn neg(self) -> $t {
-                $t(-self.0, -self.1, -self.2)
-            }
-        }
-
-        impl ops::Sub<$t> for $t {
-            type Output = $t;
-
-            fn sub(self, other: $t) -> $t {
-                $t(self.0 - other.0, self.1 - other.1, self.2 - other.2)
-            }
-        }
-    };
-}
-
-operations![Color];
-operations![Point];
-
-pub static ORIGIN: Point = Point(0.0, 0.0, 0.0);
-pub static UNIT_X: Point = Point(1.0, 0.0, 0.0);
-pub static UNIT_Y: Point = Point(0.0, 1.0, 0.0);
-pub static UNIT_Z: Point = Point(0.0, 0.0, 1.0);
-
-pub static BLACK: Color = Color(0.0, 0.0, 0.0);
+pub static BLACK: Color = Color {
+    r: 0.0,
+    g: 0.0,
+    b: 0.0,
+};
 
 #[derive(Clone, Copy)]
 pub struct Material {
