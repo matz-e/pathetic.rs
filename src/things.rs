@@ -425,6 +425,6 @@ mod tests {
         let m = Material::new(0.0, 0.0, 0.0, BLACK);
         let r = Rhomboid::new(ORIGIN, 1.0 * UNIT_Y, 1.0 * UNIT_Z, m);
         let n = r.normal(&ORIGIN, &UNIT_X);
-        assert_eq!(n, -UNIT_X);
+        assert_eq!(n, UNIT_X);
     }
 }
