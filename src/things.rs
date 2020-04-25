@@ -274,16 +274,15 @@ impl Rhomboid {
 impl Thing for Rhomboid {
     fn hit_by(&self, ray: &Ray) -> Option<f32> {
         let conn = self.base - ray.base;
-        let in_plane = self.n * conn * self.n - conn;
         let norm = self.normal(&ORIGIN, &ray.direction);
         let t = conn * norm / (ray.direction * norm);
         if t < 0.0 {
             return None;
         }
+        let in_plane = ray.at(t) - self.base;
         let along_x = self.x * in_plane;
         let along_y = self.y * in_plane;
         if (0.0..=self.width).contains(&along_x) && (0.0..=self.height).contains(&along_y) {
-            // println!("{}", t);
             Some(t)
         } else {
             None
@@ -294,12 +293,8 @@ impl Thing for Rhomboid {
         self.material
     }
 
-    fn normal(&self, _point: &Point, direction: &Point) -> Point {
-        if self.n * *direction > 0.0 {
-            -self.n
-        } else {
-            self.n
-        }
+    fn normal(&self, _point: &Point, _direction: &Point) -> Point {
+        self.n
     }
 }
 
