@@ -81,9 +81,7 @@ impl Scene {
                 impact,
                 ray.direction - 2.0 * normal * (normal * ray.direction),
             );
-            intensity += material.color
-                * material.specularity
-                * self.bounce(&reflection, depth - 1, Some(index));
+            intensity += material.specularity * self.bounce(&reflection, depth - 1, Some(index));
         }
 
         if material.diffusion > 0.0 {
