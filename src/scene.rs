@@ -77,9 +77,10 @@ impl Scene {
 
         let mut intensity = material.emittance * material.color;
         if material.specularity > 0.0 {
+            let reflected = ray.direction - 2.0 * normal * (normal * ray.direction);
             let reflection = Ray::new(
                 impact,
-                ray.direction - 2.0 * normal * (normal * ray.direction),
+                (reflected + material.hardness * reflected.randomize()).normalized()
             );
             intensity += material.specularity * self.bounce(&reflection, depth - 1, Some(index));
         }

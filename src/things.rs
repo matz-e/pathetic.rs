@@ -125,15 +125,17 @@ pub static BLACK: Color = Color {
 #[derive(Clone, Copy)]
 pub struct Material {
     pub specularity: f32,
+    pub hardness: f32,
     pub diffusion: f32,
     pub emittance: f32,
     pub color: Color,
 }
 
 impl Material {
-    pub fn new(specularity: f32, diffusion: f32, emittance: f32, color: Color) -> Material {
+    pub fn new(specularity: f32, hardness: f32, diffusion: f32, emittance: f32, color: Color) -> Material {
         Material {
             specularity,
+            hardness,
             diffusion,
             emittance,
             color,
@@ -362,7 +364,7 @@ mod tests {
 
     #[test]
     fn ray_hits_sphere() {
-        let m = Material::new(0.0, 0.0, 0.0, BLACK);
+        let m = Material::new(0.0, 0.0, 0.0, 0.0, BLACK);
         let r = Ray::new(Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0));
         let s = Sphere::new(Point::new(1.0, 0.0, 0.0), 0.5, m);
         assert_eq!(s.hit_by(&r), Some(0.5));
@@ -374,7 +376,7 @@ mod tests {
 
     #[test]
     fn ray_misses_sphere() {
-        let m = Material::new(0.0, 0.0, 0.0, BLACK);
+        let m = Material::new(0.0, 0.0, 0.0, 0.0, BLACK);
         let r = Ray::new(Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0));
         let s = Sphere::new(Point::new(-1.0, 0.0, 0.0), 0.5, m);
         assert_eq!(s.hit_by(&r), None);
@@ -386,7 +388,7 @@ mod tests {
 
     #[test]
     fn ray_hits_rectangle() {
-        let m = Material::new(0.0, 0.0, 0.0, BLACK);
+        let m = Material::new(0.0, 0.0, 0.0, 0.0, BLACK);
         let r = Ray::new(-UNIT_X, UNIT_X);
         let r2 = Rhomboid::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
         assert_eq!(r2.hit_by(&r), Some(6.0));
@@ -406,7 +408,7 @@ mod tests {
 
     #[test]
     fn ray_misses_rectangle() {
-        let m = Material::new(0.0, 0.0, 0.0, BLACK);
+        let m = Material::new(0.0, 0.0, 0.0, 0.0, BLACK);
         let r = Ray::new(ORIGIN, -UNIT_X);
         let r2 = Rhomboid::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
         assert_eq!(r2.hit_by(&r), None);
@@ -422,7 +424,7 @@ mod tests {
 
     #[test]
     fn normal_for_rectangle() {
-        let m = Material::new(0.0, 0.0, 0.0, BLACK);
+        let m = Material::new(0.0, 0.0, 0.0, 0.0, BLACK);
         let r = Rhomboid::new(ORIGIN, 1.0 * UNIT_Y, 1.0 * UNIT_Z, m);
         let n = r.normal(&ORIGIN, &UNIT_X);
         assert_eq!(n, UNIT_X);
