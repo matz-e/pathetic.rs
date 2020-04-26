@@ -24,13 +24,13 @@ fn main() {
     scene.add(Sphere::new(Point::new(1.0, 0.0, 1.0), 0.5, gray));
     scene.add(Sphere::new(Point::new(1.0, 1.0, 0.0), 0.3, gray));
     scene.add(Sphere::new(Point::new(0.0, 1.0, 0.0), 0.3, gray));
-    scene.add(Sphere::new(Point::new(0.0, 0.0, -1.0), 0.5, glass));
+    scene.add(Sphere::new(Point::new(0.5, 0.5, -1.5), 0.5, glass));
     scene.add(Sphere::new(Point::new(-1.0, 1.0, 0.0), 0.3, gray));
     scene.add(Sphere::new(Point::new(-5.0, -5.0, -5.0), 5.0, light));
     scene.add(Rhomboid::new(
-        Point::new(-4.0, 2.0, -1.0),
+        Point::new(-4.0, 2.0, -11.0),
         Point::new(6.0, 0.0, 0.0),
-        Point::new(0.0, 0.0, 4.0),
+        Point::new(0.0, 0.0, 14.0),
         green,
     ));
     scene.add(Rhomboid::new(
@@ -41,7 +41,7 @@ fn main() {
     ));
     scene.add(Rhomboid::new(
         Point::new(2.0, 2.0, 3.0),
-        Point::new(0.0, 0.0, -4.0),
+        Point::new(0.0, 0.0, -14.0),
         Point::new(0.0, -6.0, 0.0),
         blue,
     ));
