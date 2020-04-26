@@ -59,6 +59,12 @@ impl Scene {
         self.things.push(Box::new(thing))
     }
 
+    /// Schlick's approximation for the reflection coefficient
+    fn reflect(n_frac: f32, cos_in: f32) -> f32 {
+        let r0 = ((n_frac - 1.0) / (n_frac + 1.0)).powi(2);
+        r0 + (1.0 - r0) * (1.0 - cos_in).powi(5)
+    }
+
     fn bounce(&self, ray: &Ray, depth: usize, skip: Option<usize>) -> Color {
         if depth == 0 {
             return BLACK;
@@ -89,6 +95,27 @@ impl Scene {
             let scatter = Ray::new(impact, normal.randomize());
             intensity +=
                 material.color * material.diffusion * self.bounce(&scatter, depth - 1, Some(index));
+        }
+
+        if material.refraction > 0.0 {
+            let cos_in = normal * ray.direction;
+            let n_frac = if cos_in < 0.0 {
+                1.0 / 1.5  // outside material
+            } else {
+                1.5
+            };
+            let cos_out_sqr = 1.0 - n_frac * n_frac * (1.0 - cos_in * cos_in);
+            let reflection = Ray::new(impact, ray.direction - 2.0 * normal * cos_in);
+            if cos_out_sqr < 0.0 {
+                intensity += material.refraction * self.bounce(&reflection, depth - 1, Some(index));
+            } else {
+                let in_plane = (ray.direction - normal * cos_in) * n_frac;
+                let along_normal = normal * 1.0f32.copysign(cos_in) * (1.0 - in_plane.norm_sqr()).sqrt();
+                let transmission = Ray::new(impact, in_plane + along_normal);
+                let refl = Scene::reflect(n_frac, cos_in.abs());
+                let trans = 1.0 - refl;
+                intensity += material.refraction * (refl * self.bounce(&reflection, depth - 1, Some(index)) + trans * self.bounce(&transmission, depth - 1, Some(index)));
+            }
         }
 
         intensity
