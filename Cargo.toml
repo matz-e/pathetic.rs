@@ -9,5 +9,6 @@ edition = "2018"
 [dependencies]
 image = "*"
 rand = "*"
+rayon = "*"
 
 pathetic_derive = { path = "pathetic_derive" }

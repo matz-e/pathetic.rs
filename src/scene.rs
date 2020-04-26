@@ -36,7 +36,7 @@ impl Camera {
 
 pub struct Scene {
     camera: Camera,
-    things: Vec<Box<dyn Thing>>,
+    things: Vec<Box<dyn Thing + Sync>>,
 }
 
 impl Scene {
@@ -54,7 +54,7 @@ impl Scene {
 
     pub fn add<T>(&mut self, thing: T)
     where
-        T: Thing + 'static,
+        T: Thing + Sync + 'static,
     {
         self.things.push(Box::new(thing))
     }

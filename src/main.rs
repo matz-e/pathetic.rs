@@ -1,8 +1,10 @@
 extern crate image;
+extern crate rayon;
 
 mod scene;
 mod things;
 
+use rayon::prelude::*;
 use scene::*;
 use things::*;
 
@@ -53,13 +55,16 @@ fn main() {
     let height = 600;
     let mut imgbuf: image::RgbImage = image::ImageBuffer::new(width, height);
 
-    imgbuf.enumerate_pixels_mut().for_each(|(x, y, pixel)| {
-        *pixel = image::Rgb(scene.render(
-            x as f32 / width as f32,
-            y as f32 / height as f32,
-            samples,
-            bounces,
-        ));
-    });
+    imgbuf
+        .enumerate_pixels_mut()
+        .par_bridge()
+        .for_each(|(x, y, pixel)| {
+            *pixel = image::Rgb(scene.render(
+                x as f32 / width as f32,
+                y as f32 / height as f32,
+                samples,
+                bounces,
+            ));
+        });
     imgbuf.save("example.jpg").unwrap();
 }

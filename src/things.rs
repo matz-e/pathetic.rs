@@ -179,7 +179,7 @@ impl Ray {
 
     pub fn intersect(
         &self,
-        things: &[Box<dyn Thing>],
+        things: &[Box<dyn Thing + Sync>],
         skip: Option<usize>,
     ) -> Option<(f32, usize)> {
         things.iter().enumerate().fold(None, |min, (n, e)| {
