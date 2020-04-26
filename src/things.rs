@@ -133,7 +133,14 @@ pub struct Material {
 }
 
 impl Material {
-    pub fn new(specularity: f32, hardness: f32, diffusion: f32, refraction: f32, emittance: f32, color: Color) -> Material {
+    pub fn new(
+        specularity: f32,
+        hardness: f32,
+        diffusion: f32,
+        refraction: f32,
+        emittance: f32,
+        color: Color,
+    ) -> Material {
         Material {
             specularity,
             hardness,

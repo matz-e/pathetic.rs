@@ -86,7 +86,7 @@ impl Scene {
             let reflected = ray.direction - 2.0 * normal * (normal * ray.direction);
             let reflection = Ray::new(
                 impact,
-                (reflected + material.hardness * reflected.randomize()).normalized()
+                (reflected + material.hardness * reflected.randomize()).normalized(),
             );
             intensity += material.specularity * self.bounce(&reflection, depth - 1, Some(index));
         }
@@ -100,7 +100,7 @@ impl Scene {
         if material.refraction > 0.0 {
             let cos_in = normal * ray.direction;
             let n_frac = if cos_in < 0.0 {
-                1.0 / 1.5  // outside material
+                1.0 / 1.5 // outside material
             } else {
                 1.5
             };
@@ -110,11 +110,14 @@ impl Scene {
                 intensity += material.refraction * self.bounce(&reflection, depth - 1, Some(index));
             } else {
                 let in_plane = (ray.direction - normal * cos_in) * n_frac;
-                let along_normal = normal * 1.0f32.copysign(cos_in) * (1.0 - in_plane.norm_sqr()).sqrt();
+                let along_normal =
+                    normal * 1.0f32.copysign(cos_in) * (1.0 - in_plane.norm_sqr()).sqrt();
                 let transmission = Ray::new(impact, in_plane + along_normal);
                 let refl = Scene::reflect(n_frac, cos_in.abs());
                 let trans = 1.0 - refl;
-                intensity += material.refraction * (refl * self.bounce(&reflection, depth - 1, Some(index)) + trans * self.bounce(&transmission, depth - 1, Some(index)));
+                intensity += material.refraction
+                    * (refl * self.bounce(&reflection, depth - 1, Some(index))
+                        + trans * self.bounce(&transmission, depth - 1, Some(index)));
             }
         }
 
