@@ -61,5 +61,5 @@ fn main() {
             bounces,
         ));
     });
-    imgbuf.save("test.png").unwrap();
+    imgbuf.save("example.jpg").unwrap();
 }
