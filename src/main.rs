@@ -48,5 +48,5 @@ fn main() {
     let samples = 500;
     let bounces = 6;
 
-    scene.render("example.jpg", 300, samples, bounces).unwrap();
+    scene.render("example.jpg", dpi, samples, bounces).unwrap();
 }

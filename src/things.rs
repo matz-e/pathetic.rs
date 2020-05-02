@@ -1,9 +1,11 @@
 extern crate rand;
 
 use pathetic_derive::*;
+use pyo3::prelude::*;
 use rand::prelude::*;
 use std::ops;
 
+#[pyclass]
 #[derive(Clone, Copy, Debug, PartialEq, PartialOps)]
 pub struct Point {
     pub x: f32,
@@ -11,7 +13,9 @@ pub struct Point {
     pub z: f32,
 }
 
+#[pymethods]
 impl Point {
+    #[new]
     pub fn new(x: f32, y: f32, z: f32) -> Point {
         Point { x, y, z }
     }
@@ -74,6 +78,7 @@ impl ops::Mul<Point> for Point {
     }
 }
 
+#[pyclass]
 #[derive(Clone, Copy, Debug, PartialEq, PartialOps)]
 pub struct Color {
     pub r: f32,
@@ -81,7 +86,9 @@ pub struct Color {
     pub b: f32,
 }
 
+#[pymethods]
 impl Color {
+    #[new]
     pub fn new(r: f32, g: f32, b: f32) -> Color {
         Color { r, g, b }
     }
@@ -122,6 +129,7 @@ pub static BLACK: Color = Color {
     b: 0.0,
 };
 
+#[pyclass]
 #[derive(Clone, Copy)]
 pub struct Material {
     pub specularity: f32,
@@ -132,7 +140,9 @@ pub struct Material {
     pub color: Color,
 }
 
+#[pymethods]
 impl Material {
+    #[new]
     pub fn new(
         specularity: f32,
         hardness: f32,
@@ -152,26 +162,25 @@ impl Material {
     }
 }
 
-pub trait Thing {
-    fn hit_by(&self, ray: &Ray) -> Option<f32>;
-    fn material(&self) -> Material;
-    fn normal(&self, position: &Point, direction: &Point) -> Point;
-}
-
+#[pyclass]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Ray {
     pub base: Point,
     pub direction: Point,
 }
 
+#[pymethods]
 impl Ray {
+    #[new]
     pub fn new(base: Point, direction: Point) -> Ray {
         Ray {
             base,
             direction: direction / direction.norm(),
         }
     }
+}
 
+impl Ray {
     /// Returns a new point along the ray at distance `d` from the base
     pub fn at(&self, d: f32) -> Point {
         self.base + d * self.direction
@@ -204,6 +213,13 @@ impl Ray {
     }
 }
 
+pub trait Thing {
+    fn hit_by(&self, ray: &Ray) -> Option<f32>;
+    fn material(&self) -> Material;
+    fn normal(&self, position: &Point, direction: &Point) -> Point;
+}
+
+#[pyclass]
 #[derive(Clone)]
 pub struct Sphere {
     center: Point,
@@ -211,7 +227,9 @@ pub struct Sphere {
     material: Material,
 }
 
+#[pymethods]
 impl Sphere {
+    #[new]
     pub fn new(center: Point, radius: f32, material: Material) -> Sphere {
         Sphere {
             center,
@@ -255,6 +273,8 @@ impl Thing for Sphere {
     }
 }
 
+#[pyclass]
+#[derive(Clone)]
 pub struct Rhomboid {
     base: Point,
     x: Point,
@@ -265,7 +285,9 @@ pub struct Rhomboid {
     material: Material,
 }
 
+#[pymethods]
 impl Rhomboid {
+    #[new]
     pub fn new(base: Point, x: Point, y: Point, material: Material) -> Rhomboid {
         let normal = x.cross(y).normalized();
         let width = x.norm();

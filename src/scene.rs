@@ -2,9 +2,12 @@ extern crate image;
 extern crate rayon;
 
 use crate::things::*;
+use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::error::Error;
 
+#[pyclass]
+#[derive(Clone)]
 pub struct Camera {
     /// The normal vector of the plain of the screen
     normal: Ray,
@@ -16,7 +19,9 @@ pub struct Camera {
     distance: f32,
 }
 
+#[pymethods]
 impl Camera {
+    #[new]
     pub fn new(normal: Ray, x: Point, y: Point, distance: f32) -> Self {
         Camera {
             normal,
@@ -158,7 +163,13 @@ impl Scene {
     /// * `dpi` - the scaling factor for the image resolution
     /// * `samples` - the number of rays to cast
     /// * `bounces` - the maximum number of scatterings of each ray
-    pub fn render(&self, filename: &str, dpi: u32, samples: usize, bounces: usize) -> Result<(), Box<dyn Error>> {
+    pub fn render(
+        &self,
+        filename: &str,
+        dpi: u32,
+        samples: usize,
+        bounces: usize,
+    ) -> Result<(), Box<dyn Error>> {
         let width = (dpi as f32 * self.camera.x.norm()) as u32;
         let height = (dpi as f32 * self.camera.y.norm()) as u32;
         let mut imgbuf: image::RgbImage = image::ImageBuffer::new(width, height);
