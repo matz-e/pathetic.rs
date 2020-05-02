@@ -158,15 +158,15 @@ impl Scene {
     /// * `dpi` - the scaling factor for the image resolution
     /// * `samples` - the number of rays to cast
     /// * `bounces` - the maximum number of scatterings of each ray
-    pub fn render(&self, filename: &str, dpi: usize, samples: usize, bounces: usize) -> Result<(), Box<dyn Error>> {
-        let width = (dpi as f32 * self.camera.x.norm()) as usize;
-        let height = (dpi as f32 * self.camera.y.norm()) as usize;
+    pub fn render(&self, filename: &str, dpi: u32, samples: usize, bounces: usize) -> Result<(), Box<dyn Error>> {
+        let width = (dpi as f32 * self.camera.x.norm()) as u32;
+        let height = (dpi as f32 * self.camera.y.norm()) as u32;
         let mut imgbuf: image::RgbImage = image::ImageBuffer::new(width, height);
         imgbuf
             .enumerate_pixels_mut()
             .par_bridge()
             .for_each(|(x, y, pixel)| {
-                *pixel = image::Rgb(scene.render_point(
+                *pixel = image::Rgb(self.render_point(
                     x as f32 / width as f32,
                     y as f32 / height as f32,
                     samples,
