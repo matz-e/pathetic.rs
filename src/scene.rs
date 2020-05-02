@@ -1,4 +1,9 @@
+extern crate image;
+extern crate rayon;
+
 use crate::things::*;
+use rayon::prelude::*;
+use std::error::Error;
 
 pub struct Camera {
     /// The normal vector of the plain of the screen
@@ -132,7 +137,7 @@ impl Scene {
     /// * `y` - the fractional position along the height of the screen
     /// * `samples` - the number of rays to cast
     /// * `bounces` - the maximum number of scatterings of each ray
-    pub fn render(&self, x: f32, y: f32, samples: usize, bounces: usize) -> [u8; 3] {
+    fn render_point(&self, x: f32, y: f32, samples: usize, bounces: usize) -> [u8; 3] {
         let ray = self.camera.view(x, y);
 
         let intensity = (0..samples).fold(BLACK, |sum, _i| sum + self.bounce(&ray, bounces, None))
@@ -143,6 +148,33 @@ impl Scene {
             (255.0 * intensity.g) as u8,
             (255.0 * intensity.b) as u8,
         ]
+    }
+
+    /// Render the defined scene
+    ///
+    /// # Arguments
+    ///
+    /// * `filename` - the name to save the final image under
+    /// * `dpi` - the scaling factor for the image resolution
+    /// * `samples` - the number of rays to cast
+    /// * `bounces` - the maximum number of scatterings of each ray
+    pub fn render(&self, filename: &str, dpi: usize, samples: usize, bounces: usize) -> Result<(), Box<dyn Error>> {
+        let width = (dpi as f32 * self.camera.x.norm()) as usize;
+        let height = (dpi as f32 * self.camera.y.norm()) as usize;
+        let mut imgbuf: image::RgbImage = image::ImageBuffer::new(width, height);
+        imgbuf
+            .enumerate_pixels_mut()
+            .par_bridge()
+            .for_each(|(x, y, pixel)| {
+                *pixel = image::Rgb(scene.render_point(
+                    x as f32 / width as f32,
+                    y as f32 / height as f32,
+                    samples,
+                    bounces,
+                ));
+            });
+        imgbuf.save(filename)?;
+        Ok(())
     }
 }
 
