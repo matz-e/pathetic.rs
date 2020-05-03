@@ -138,7 +138,7 @@ impl ops::Mul<Color> for Color {
     type Output = Color;
 
     fn mul(self, other: Color) -> Color {
-        Color::new(self.r * &other.r, self.g * &other.g, self.b * &other.b)
+        Color::new(self.r * other.r, self.g * other.g, self.b * other.b)
     }
 }
 

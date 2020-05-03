@@ -31,15 +31,15 @@ fn pathetic(_py: Python, m: &PyModule) -> PyResult<()> {
     ) {
         let mut scene = Scene::new(camera);
         for obj in objects {
-            let s: Result<Sphere, _> = obj.extract();
-            if s.is_ok() {
-                scene.add(s.unwrap());
+            let sphere: Result<Sphere, _> = obj.extract();
+            if let Ok(s) = sphere {
+                scene.add(s);
                 continue;
             }
 
-            let r: Result<Rhomboid, _> = obj.extract();
-            if r.is_ok() {
-                scene.add(r.unwrap());
+            let rhomboid: Result<Rhomboid, _> = obj.extract();
+            if let Ok(r) = rhomboid {
+                scene.add(r);
             }
         }
         scene.render(filename, dpi, samples, bounces).unwrap();
