@@ -5,7 +5,9 @@ use pyo3::prelude::*;
 use rand::prelude::*;
 use std::ops;
 
+/// A point in space
 #[pyclass]
+#[text_signature = "(x, y, z)"]
 #[derive(Clone, Copy, Debug, PartialEq, PartialOps)]
 pub struct Point {
     pub x: f32,
@@ -20,6 +22,23 @@ impl Point {
         Point { x, y, z }
     }
 
+    #[getter]
+    pub fn get_x(&self) -> PyResult<f32> {
+        Ok(self.x)
+    }
+
+    #[getter]
+    pub fn get_y(&self) -> PyResult<f32> {
+        Ok(self.y)
+    }
+
+    #[getter]
+    pub fn get_z(&self) -> PyResult<f32> {
+        Ok(self.z)
+    }
+}
+
+impl Point {
     pub fn cross(self, other: Point) -> Point {
         Point::new(
             self.y * other.z - self.z * other.y,
@@ -40,6 +59,10 @@ impl Point {
         self / self.norm()
     }
 
+    /// Returns a Point that is perpendicular to the current one
+    ///
+    /// Constructed by zeroing the smallest component and swapping the remaining two components,
+    /// normalizing afterwards.
     pub fn perpendicular(self) -> Point {
         if self.x.abs() <= self.y.abs() && self.x.abs() <= self.z.abs() {
             return Point::new(0.0, -self.z, self.y).normalized();
@@ -78,7 +101,9 @@ impl ops::Mul<Point> for Point {
     }
 }
 
+/// A color with components red, green, and blue
 #[pyclass]
+#[text_signature = "(r, g, b)"]
 #[derive(Clone, Copy, Debug, PartialEq, PartialOps)]
 pub struct Color {
     pub r: f32,
@@ -91,6 +116,21 @@ impl Color {
     #[new]
     pub fn new(r: f32, g: f32, b: f32) -> Color {
         Color { r, g, b }
+    }
+
+    #[getter]
+    pub fn get_r(&self) -> PyResult<f32> {
+        Ok(self.r)
+    }
+
+    #[getter]
+    pub fn get_g(&self) -> PyResult<f32> {
+        Ok(self.g)
+    }
+
+    #[getter]
+    pub fn get_b(&self) -> PyResult<f32> {
+        Ok(self.b)
     }
 }
 
@@ -129,6 +169,7 @@ pub static BLACK: Color = Color {
     b: 0.0,
 };
 
+/// Properties of objects in a scene
 #[pyclass]
 #[derive(Clone, Copy)]
 pub struct Material {
