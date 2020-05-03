@@ -19,7 +19,7 @@ jobs:
         toolchain: nightly
         override: true
     - run: cargo build --verbose
-    - run: cargo test --verbose
+    - run: cargo test --verbose --no-default-features
 
   clippy:
 
@@ -52,7 +52,7 @@ jobs:
     - uses: actions-rs/tarpaulin@v0.1
       with:
         version: '0.9.0'
-        args: '-- --test-threads 1'
+        args: '--no-default-features -- --test-threads 1'
 
     - uses: codecov/codecov-action@v1.0.2
       with:
