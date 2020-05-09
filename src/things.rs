@@ -303,14 +303,9 @@ impl Thing for Sphere {
         self.material
     }
 
-    fn normal(&self, point: &Point, direction: &Point) -> Point {
+    fn normal(&self, point: &Point, _direction: &Point) -> Point {
         let dist = *point - self.center;
-        let n = dist / dist.norm();
-        if n * *direction > 0.0 {
-            -n
-        } else {
-            n
-        }
+        dist / dist.norm()
     }
 }
 
@@ -377,6 +372,20 @@ mod tests {
     use super::*;
 
     #[test]
+    fn point_basics() {
+        let p = Point::new(1.0, 2.0, 3.0);
+        let q = Point::new(0.0, 1.0, 2.0);
+
+        assert_eq!(p.get_x().unwrap(), 1.0);
+        assert_eq!(p.get_y().unwrap(), 2.0);
+        assert_eq!(p.get_z().unwrap(), 3.0);
+
+        assert_eq!(p.norm_sqr(), 14.0);
+
+        assert_eq!(p * q, 8.0);
+    }
+
+    #[test]
     fn point_rotations() {
         let p = Point::new(1.0, 0.0, 0.0);
         let o = p.perpendicular();
@@ -438,8 +447,17 @@ mod tests {
     fn ray_hits_sphere() {
         let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, BLACK);
         let r = Ray::new(Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0));
+
         let s = Sphere::new(Point::new(1.0, 0.0, 0.0), 0.5, m);
         assert_eq!(s.hit_by(&r), Some(0.5));
+        let n = s.normal(&r.at(0.5), &r.direction);
+        assert_eq!(n, Point::new(-1.0, 0.0, 0.0));
+
+        // Inside sphere
+        let s = Sphere::new(Point::new(0.0, 0.0, 0.0), 0.5, m);
+        assert_eq!(s.hit_by(&r), Some(0.5));
+        let n = s.normal(&r.at(0.5), &r.direction);
+        assert_eq!(n, Point::new(1.0, 0.0, 0.0));
 
         let r = Ray::new(Point::new(0.0, 0.5, 0.0), Point::new(1.0, 0.0, 0.0));
         let s = Sphere::new(Point::new(1.0, 0.0, 0.0), 0.5, m);
@@ -495,10 +513,40 @@ mod tests {
     }
 
     #[test]
+    fn ray_intersects() {
+        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, BLACK);
+        let r = Ray::new(ORIGIN, UNIT_Z);
+
+        let things: Vec<Box<dyn Thing + Sync + 'static>> = vec![
+            Box::new(Sphere::new(Point::new(0.0, 0.0, 1.0), 0.5, m)),
+            Box::new(Sphere::new(Point::new(0.0, 0.0, 3.0), 0.5, m)),
+            Box::new(Sphere::new(Point::new(0.0, 0.0, 2.0), 0.5, m)),
+        ];
+
+        let res = r.intersect(&things[..], Some(0));
+        assert!(res.is_some());
+        let (dist, item) = res.unwrap();
+        assert_eq!(dist, 1.5);
+        assert_eq!(item, 2);
+    }
+
+    #[test]
     fn normal_for_rectangle() {
         let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, BLACK);
         let r = Rhomboid::new(ORIGIN, 1.0 * UNIT_Y, 1.0 * UNIT_Z, m);
         let n = r.normal(&ORIGIN, &UNIT_X);
         assert_eq!(n, UNIT_X);
+    }
+
+    #[test]
+    fn color_getters() {
+        let c = Color::new(1.0, 2.0, 3.0);
+        let d = Color::new(1.0, 0.0, 3.0);
+
+        assert_eq!(c.get_r().unwrap(), 1.0);
+        assert_eq!(c.get_g().unwrap(), 2.0);
+        assert_eq!(c.get_b().unwrap(), 3.0);
+
+        assert_eq!(c * d, Color::new(1.0, 0.0, 9.0));
     }
 }
