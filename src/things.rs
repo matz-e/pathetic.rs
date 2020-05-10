@@ -75,13 +75,16 @@ impl Point {
     /// Returns a point randomized in its hemisphere
     ///
     /// Uses simple rejection sampling to obtain a point on the hemisphere
-    pub fn randomize(self) -> Point {
+    ///
+    /// # Arguments
+    ///
+    /// * `rng` - The random number generator to use
+    pub fn randomize(self, rng: &mut ThreadRng) -> Point {
         let a = self.perpendicular();
         let b = self.cross(a);
         let mut x = 2.0;
         let mut y = 2.0;
         let mut z = 2.0;
-        let mut rng = rand::thread_rng();
         let full_dist = rand::distributions::Uniform::new_inclusive(-1.0, 1.0);
         let part_dist = rand::distributions::Uniform::new_inclusive(0.0, 1.0);
         while x * x + y * y + z * z > 1.0 {
@@ -427,9 +430,10 @@ mod tests {
 
     #[test]
     fn point_randomized() {
+        let mut rng = rand::thread_rng();
         let p = Point::new(0.0, 0.0, 1.0);
         for _i in 0..10 {
-            let r = p.randomize();
+            let r = p.randomize(&mut rng);
             assert!((-1.0..=1.0).contains(&r.x));
             assert!((-1.0..=1.0).contains(&r.y));
             assert!(r.z <= 1.0);

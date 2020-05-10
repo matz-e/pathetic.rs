@@ -83,7 +83,7 @@ impl Scene {
         r0 + (1.0 - r0) * (1.0 - cos_in).powi(5)
     }
 
-    fn bounce(&self, ray: &Ray, depth: usize, skip: Option<usize>) -> Color {
+    fn bounce(&self, ray: &Ray, depth: usize, skip: Option<usize>, mut rng: &mut ThreadRng) -> Color {
         if depth == 0 {
             return BLACK;
         }
@@ -104,15 +104,15 @@ impl Scene {
             let reflected = ray.direction - 2.0 * normal * (normal * ray.direction);
             let reflection = Ray::new(
                 impact,
-                (reflected + material.hardness * reflected.randomize()).normalized(),
+                (reflected + material.hardness * reflected.randomize(&mut rng)).normalized(),
             );
-            intensity += material.specularity * self.bounce(&reflection, depth - 1, Some(index));
+            intensity += material.specularity * self.bounce(&reflection, depth - 1, Some(index), &mut rng);
         }
 
         if material.diffusion > 0.0 {
-            let scatter = Ray::new(impact, normal.randomize());
+            let scatter = Ray::new(impact, normal.randomize(&mut rng));
             intensity +=
-                material.color * material.diffusion * self.bounce(&scatter, depth - 1, Some(index));
+                material.color * material.diffusion * self.bounce(&scatter, depth - 1, Some(index), &mut rng);
         }
 
         if material.refraction > 0.0 {
@@ -125,7 +125,7 @@ impl Scene {
             let cos_out_sqr = 1.0 - n_frac * n_frac * (1.0 - cos_in * cos_in);
             let reflection = Ray::new(impact, ray.direction - 2.0 * normal * cos_in);
             if cos_out_sqr < 0.0 {
-                intensity += material.refraction * self.bounce(&reflection, depth - 1, Some(index));
+                intensity += material.refraction * self.bounce(&reflection, depth - 1, Some(index), &mut rng);
             } else {
                 let in_plane = (ray.direction - normal * cos_in) * n_frac;
                 let along_normal =
@@ -135,21 +135,20 @@ impl Scene {
                 let trans = 1.0 - refl;
                 if self.bounces - depth < 2 {
                     intensity += material.refraction
-                        * (refl * self.bounce(&reflection, depth - 1, Some(index))
-                            + trans * self.bounce(&transmission, depth - 1, Some(index)));
+                        * (refl * self.bounce(&reflection, depth - 1, Some(index), &mut rng)
+                            + trans * self.bounce(&transmission, depth - 1, Some(index), &mut rng));
                 } else {
                     let p = 0.25 + 0.5 * refl; // values: 0.25 - 0.75
-                    let mut rng = rand::thread_rng();
                     let dist = rand::distributions::Uniform::new_inclusive(0.0, 1.0);
                     if rng.sample(dist) < p {
                         intensity += material.refraction
                             * refl
-                            * self.bounce(&reflection, depth - 1, Some(index))
+                            * self.bounce(&reflection, depth - 1, Some(index), &mut rng)
                             / p;
                     } else {
                         intensity += material.refraction
                             * trans
-                            * self.bounce(&transmission, depth - 1, Some(index))
+                            * self.bounce(&transmission, depth - 1, Some(index), &mut rng)
                             / (1.0 - p);
                     }
                 }
@@ -167,9 +166,10 @@ impl Scene {
     /// * `y` - the fractional position along the height of the screen
     fn render_point(&self, x: f32, y: f32) -> [u8; 3] {
         let ray = self.camera.view(x, y);
+        let mut rng = thread_rng();
 
         let intensity = (0..self.samples)
-            .fold(BLACK, |sum, _i| sum + self.bounce(&ray, self.bounces, None))
+            .fold(BLACK, |sum, _i| sum + self.bounce(&ray, self.bounces, None, &mut rng))
             / self.samples as f32;
 
         [
