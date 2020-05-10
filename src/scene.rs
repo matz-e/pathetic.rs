@@ -1,8 +1,10 @@
 extern crate image;
+extern crate rand;
 extern crate rayon;
 
 use crate::things::*;
 use pyo3::prelude::*;
+use rand::prelude::*;
 use rayon::prelude::*;
 use std::error::Error;
 
@@ -46,6 +48,8 @@ impl Camera {
 
 pub struct Scene {
     camera: Camera,
+    samples: usize,
+    bounces: usize,
     things: Vec<Box<dyn Thing + Sync>>,
 }
 
@@ -55,9 +59,13 @@ impl Scene {
     /// # Arguments
     ///
     /// * `camera` - the camera to use for rendering
-    pub fn new(camera: Camera) -> Self {
+    /// * `samples` - the number of rays to cast per pixel, defaults to 500
+    /// * `bounces` - the maximum number of ray reflections, defaults to 6
+    pub fn new(camera: Camera, samples: Option<usize>, bounces: Option<usize>) -> Self {
         Self {
             camera,
+            samples: samples.unwrap_or(500),
+            bounces: bounces.unwrap_or(6),
             things: Vec::new(),
         }
     }
@@ -125,9 +133,26 @@ impl Scene {
                 let transmission = Ray::new(impact, in_plane + along_normal);
                 let refl = Scene::reflect(n_frac, cos_in.abs());
                 let trans = 1.0 - refl;
-                intensity += material.refraction
-                    * (refl * self.bounce(&reflection, depth - 1, Some(index))
-                        + trans * self.bounce(&transmission, depth - 1, Some(index)));
+                if self.bounces - depth < 2 {
+                    intensity += material.refraction
+                        * (refl * self.bounce(&reflection, depth - 1, Some(index))
+                            + trans * self.bounce(&transmission, depth - 1, Some(index)));
+                } else {
+                    let p = 0.25 + 0.5 * refl; // values: 0.25 - 0.75
+                    let mut rng = rand::thread_rng();
+                    let dist = rand::distributions::Uniform::new_inclusive(0.0, 1.0);
+                    if rng.sample(dist) < p {
+                        intensity += material.refraction
+                            * refl
+                            * self.bounce(&reflection, depth - 1, Some(index))
+                            / p;
+                    } else {
+                        intensity += material.refraction
+                            * trans
+                            * self.bounce(&transmission, depth - 1, Some(index))
+                            / (1.0 - p);
+                    }
+                }
             }
         }
 
@@ -140,13 +165,12 @@ impl Scene {
     ///
     /// * `x` - the fractional position along the width of the screen
     /// * `y` - the fractional position along the height of the screen
-    /// * `samples` - the number of rays to cast
-    /// * `bounces` - the maximum number of scatterings of each ray
-    fn render_point(&self, x: f32, y: f32, samples: usize, bounces: usize) -> [u8; 3] {
+    fn render_point(&self, x: f32, y: f32) -> [u8; 3] {
         let ray = self.camera.view(x, y);
 
-        let intensity = (0..samples).fold(BLACK, |sum, _i| sum + self.bounce(&ray, bounces, None))
-            / samples as f32;
+        let intensity = (0..self.samples)
+            .fold(BLACK, |sum, _i| sum + self.bounce(&ray, self.bounces, None))
+            / self.samples as f32;
 
         [
             (255.0 * intensity.r) as u8,
@@ -161,15 +185,7 @@ impl Scene {
     ///
     /// * `filename` - the name to save the final image under
     /// * `dpi` - the scaling factor for the image resolution
-    /// * `samples` - the number of rays to cast
-    /// * `bounces` - the maximum number of scatterings of each ray
-    pub fn render(
-        &self,
-        filename: &str,
-        dpi: u32,
-        samples: usize,
-        bounces: usize,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn render(&self, filename: &str, dpi: u32) -> Result<(), Box<dyn Error>> {
         let width = (dpi as f32 * self.camera.x.norm()) as u32;
         let height = (dpi as f32 * self.camera.y.norm()) as u32;
         let mut imgbuf: image::RgbImage = image::ImageBuffer::new(width, height);
@@ -177,12 +193,9 @@ impl Scene {
             .enumerate_pixels_mut()
             .par_bridge()
             .for_each(|(x, y, pixel)| {
-                *pixel = image::Rgb(self.render_point(
-                    x as f32 / width as f32,
-                    y as f32 / height as f32,
-                    samples,
-                    bounces,
-                ));
+                *pixel = image::Rgb(
+                    self.render_point(x as f32 / width as f32, y as f32 / height as f32),
+                );
             });
         imgbuf.save(filename)?;
         Ok(())

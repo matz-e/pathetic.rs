@@ -26,10 +26,10 @@ fn pathetic(_py: Python, m: &PyModule) -> PyResult<()> {
         objects: &PyList,
         filename: &str,
         dpi: u32,
-        samples: usize,
-        bounces: usize,
+        samples: Option<usize>,
+        bounces: Option<usize>,
     ) {
-        let mut scene = Scene::new(camera);
+        let mut scene = Scene::new(camera, samples, bounces);
         for obj in objects {
             let sphere: Result<Sphere, _> = obj.extract();
             if let Ok(s) = sphere {
@@ -42,7 +42,7 @@ fn pathetic(_py: Python, m: &PyModule) -> PyResult<()> {
                 scene.add(r);
             }
         }
-        scene.render(filename, dpi, samples, bounces).unwrap();
+        scene.render(filename, dpi).unwrap();
     }
 
     Ok(())
