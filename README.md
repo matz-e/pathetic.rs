@@ -12,7 +12,7 @@ $ pipenv shell
 
 Build the Python bindings with:
 ```console
-$ maturin develop
+$ maturin develop --release
 ```
 
 ## Example Output
