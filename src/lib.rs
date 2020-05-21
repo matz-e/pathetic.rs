@@ -14,8 +14,9 @@ fn pathetic(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<Color>()?;
     m.add_class::<Material>()?;
 
-    m.add_class::<Sphere>()?;
     m.add_class::<Rhomboid>()?;
+    m.add_class::<Sphere>()?;
+    m.add_class::<Triangle>()?;
 
     m.add_class::<Camera>()?;
 
@@ -31,14 +32,20 @@ fn pathetic(_py: Python, m: &PyModule) -> PyResult<()> {
     ) {
         let mut scene = Scene::new(camera, samples, bounces);
         for obj in objects {
+            let rhomboid: Result<Rhomboid, _> = obj.extract();
+            if let Ok(r) = rhomboid {
+                scene.add(r);
+                continue;
+            }
+
             let sphere: Result<Sphere, _> = obj.extract();
             if let Ok(s) = sphere {
                 scene.add(s);
                 continue;
             }
 
-            let rhomboid: Result<Rhomboid, _> = obj.extract();
-            if let Ok(r) = rhomboid {
+            let triangle: Result<Triangle, _> = obj.extract();
+            if let Ok(r) = triangle {
                 scene.add(r);
             }
         }
