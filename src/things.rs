@@ -332,6 +332,64 @@ impl Thing for Sphere {
 
 #[pyclass]
 #[derive(Clone)]
+pub struct Triangle {
+    base: Point,
+    x: Point,
+    y: Point,
+    n: Point,
+    width: f32,
+    height: f32,
+    material: Material,
+}
+
+#[pymethods]
+impl Triangle {
+    #[new]
+    pub fn new(base: Point, x: Point, y: Point, material: Material) -> Triangle {
+        let normal = x.cross(y).normalized();
+        let width = x.norm();
+        let height = y.norm();
+        Triangle {
+            base,
+            x: x / width,
+            y: y / height,
+            n: normal,
+            width,
+            height,
+            material,
+        }
+    }
+}
+
+impl Thing for Triangle {
+    fn hit_by(&self, ray: &Ray) -> Option<f32> {
+        let conn = self.base - ray.base;
+        let norm = self.normal(&ORIGIN, &ray.direction);
+        let t = conn * norm / (ray.direction * norm);
+        if t < 0.0 {
+            return None;
+        }
+        let in_plane = ray.at(t) - self.base;
+        let along_x = (self.x * in_plane) / self.width;
+        let along_y = (self.y * in_plane) / self.height;
+        if (0.0..=1.0).contains(&(along_x + along_y)) {
+            Some(t)
+        } else {
+            None
+        }
+    }
+
+    fn material(&self) -> Material {
+        self.material
+    }
+
+    fn normal(&self, _point: &Point, _direction: &Point) -> Point {
+        self.n
+    }
+}
+
+#[pyclass]
+#[derive(Clone)]
 pub struct Rhomboid {
     base: Point,
     x: Point,
@@ -496,6 +554,29 @@ mod tests {
         let r = Ray::new(Point::new(0.0, 0.0, 0.0), Point::new(1.0, 1.0, 0.0));
         let s = Sphere::new(Point::new(1.0, 0.0, 0.0), 0.5, m);
         assert_eq!(s.hit_by(&r), None);
+    }
+
+    #[test]
+    fn ray_hits_triangle() {
+        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, BLACK);
+        let r = Ray::new(-UNIT_X, UNIT_X);
+        let t = Triangle::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
+        assert_eq!(t.hit_by(&r), Some(6.0));
+
+        let t = Triangle::new(Point::new(4.0, -0.1, -0.1), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
+        assert_eq!(t.hit_by(&r), Some(5.0));
+    }
+
+    #[test]
+    fn ray_misses_triangle() {
+        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, BLACK);
+        let r = Ray::new(-UNIT_X, UNIT_X);
+        let t = Triangle::new(Point::new(5.0, -1.9, -1.9), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
+        assert_eq!(t.hit_by(&r), None);
+
+        let r = Ray::new(-UNIT_X, Point::new(1.0, 0.1, 0.1));
+        let t = Triangle::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
+        assert_eq!(t.hit_by(&r), None);
     }
 
     #[test]
