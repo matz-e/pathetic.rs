@@ -36,6 +36,24 @@ impl Point {
     pub fn get_z(&self) -> PyResult<f32> {
         Ok(self.z)
     }
+
+    #[setter]
+    pub fn set_x(&mut self, x: f32) -> PyResult<()> {
+        self.x = x;
+        Ok(())
+    }
+
+    #[setter]
+    pub fn set_y(&mut self, y: f32) -> PyResult<()> {
+        self.y = y;
+        Ok(())
+    }
+
+    #[setter]
+    pub fn set_z(&mut self, z: f32) -> PyResult<()> {
+        self.z = z;
+        Ok(())
+    }
 }
 
 impl Point {
