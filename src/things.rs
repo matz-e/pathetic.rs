@@ -345,7 +345,10 @@ pub struct Triangle {
 #[pymethods]
 impl Triangle {
     #[new]
-    pub fn new(base: Point, x: Point, y: Point, material: Material) -> Triangle {
+    pub fn new(a: Point, b: Point, c: Point, material: Material) -> Triangle {
+        let base = a;
+        let x = b - a;
+        let y = c - a;
         let normal = x.cross(y).normalized();
         let width = x.norm();
         let height = y.norm();
@@ -560,10 +563,12 @@ mod tests {
     fn ray_hits_triangle() {
         let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, BLACK);
         let r = Ray::new(-UNIT_X, UNIT_X);
-        let t = Triangle::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
+        let a = Point::new(5.0, -1.0, -1.0);
+        let t = Triangle::new(a, a + 2.0 * UNIT_Y, a + 2.0 * UNIT_Z, m);
         assert_eq!(t.hit_by(&r), Some(6.0));
 
-        let t = Triangle::new(Point::new(4.0, -0.1, -0.1), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
+        let a = Point::new(4.0, -0.1, -0.1);
+        let t = Triangle::new(a, a + 2.0 * UNIT_Y, a + 2.0 * UNIT_Z, m);
         assert_eq!(t.hit_by(&r), Some(5.0));
     }
 
@@ -571,11 +576,13 @@ mod tests {
     fn ray_misses_triangle() {
         let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, BLACK);
         let r = Ray::new(-UNIT_X, UNIT_X);
-        let t = Triangle::new(Point::new(5.0, -1.9, -1.9), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
+        let a = Point::new(5.0, -1.9, -1.9);
+        let t = Triangle::new(a, a + 2.0 * UNIT_Y, a + 2.0 * UNIT_Z, m);
         assert_eq!(t.hit_by(&r), None);
 
         let r = Ray::new(-UNIT_X, Point::new(1.0, 0.1, 0.1));
-        let t = Triangle::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
+        let a = Point::new(5.0, -1.0, -1.0);
+        let t = Triangle::new(a, a + 2.0 * UNIT_Y, a + 2.0 * UNIT_Z, m);
         assert_eq!(t.hit_by(&r), None);
     }
 
