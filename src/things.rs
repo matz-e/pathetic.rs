@@ -5,6 +5,8 @@ use pyo3::prelude::*;
 use rand::prelude::*;
 use std::ops;
 
+static EPSILON: f32 = 1e-6;
+
 /// A point in space
 #[pyclass]
 #[text_signature = "(x, y, z)"]
@@ -333,12 +335,9 @@ impl Thing for Sphere {
 #[pyclass]
 #[derive(Clone)]
 pub struct Triangle {
-    base: Point,
-    x: Point,
-    y: Point,
-    n: Point,
-    width: f32,
-    height: f32,
+    a: Point,
+    b: Point,
+    c: Point,
     material: Material,
 }
 
@@ -346,36 +345,34 @@ pub struct Triangle {
 impl Triangle {
     #[new]
     pub fn new(a: Point, b: Point, c: Point, material: Material) -> Triangle {
-        let base = a;
-        let x = b - a;
-        let y = c - a;
-        let normal = x.cross(y).normalized();
-        let width = x.norm();
-        let height = y.norm();
-        Triangle {
-            base,
-            x: x / width,
-            y: y / height,
-            n: normal,
-            width,
-            height,
-            material,
-        }
+        Triangle { a, b, c, material, }
     }
 }
 
 impl Thing for Triangle {
+    /// Determines at which point a ray hits the triangle
+    ///
+    /// Basic implementation of the Möller-Trumbore algorithm.
     fn hit_by(&self, ray: &Ray) -> Option<f32> {
-        let conn = self.base - ray.base;
-        let norm = self.normal(&ORIGIN, &ray.direction);
-        let t = conn * norm / (ray.direction * norm);
-        if t < 0.0 {
+        let x = self.b - self.a;
+        let y = self.c - self.a;
+        let h = ray.direction.cross(y);
+        let a = x * h;
+        if a.abs() < EPSILON {
+            return None;  // parallel
+        }
+        let s = ray.base - self.a;
+        let u = s * h / a;
+        if u < 0.0 || u > 1.0 {
             return None;
         }
-        let in_plane = ray.at(t) - self.base;
-        let along_x = (self.x * in_plane) / self.width;
-        let along_y = (self.y * in_plane) / self.height;
-        if (0.0..=1.0).contains(&(along_x + along_y)) {
+        let q = s.cross(x);
+        let v = ray.direction * q / a;
+        if v < 0.0 || u + v > 1.0 {
+            return None;
+        }
+        let t = y * q / a;
+        if t > EPSILON {
             Some(t)
         } else {
             None
@@ -386,8 +383,15 @@ impl Thing for Triangle {
         self.material
     }
 
-    fn normal(&self, _point: &Point, _direction: &Point) -> Point {
-        self.n
+    fn normal(&self, _point: &Point, direction: &Point) -> Point {
+        let x = self.b - self.a;
+        let y = self.c - self.a;
+        let n = y.cross(x).normalized();
+        if n * *direction < 0.0 {
+            n
+        } else {
+            -n
+        }
     }
 }
 
