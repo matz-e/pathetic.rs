@@ -29,9 +29,8 @@ pub struct Camera {
 impl Camera {
     #[new]
     pub fn new(normal: Ray, width: f32, height: f32, distance: f32, aperture: Option<f32>, focal_length: Option<f32>) -> Self {
-        let x0 = normal.direction.perpendicular();
-        let x = width * x0;
-        let y = height * normal.direction.cross(x);
+        let x = -width * normal.direction.cross(UNIT_Y).normalized();
+        let y = height * normal.direction.cross(UNIT_X).normalized();
         Camera {
             normal,
             x,
@@ -229,9 +228,7 @@ mod tests {
     #[test]
     fn camera_rays() {
         let normal = Ray::new(Point::new(0.0, 0.0, -1.0), Point::new(0.0, 0.0, 1.0));
-        let x = Point::new(2.0, 0.0, 0.0);
-        let y = Point::new(0.0, 2.0, 0.0);
-        let c = Camera::new(normal, x, y, 2.0, None, None);
+        let c = Camera::new(normal, 2.0, 2.0, 2.0, None, None);
 
         let mut rng = thread_rng();
 
