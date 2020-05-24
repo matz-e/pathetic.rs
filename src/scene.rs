@@ -19,30 +19,49 @@ pub struct Camera {
     y: Point,
     /// The distance of the eye from the screen
     distance: f32,
+    /// The radius of the aperture
+    aperture: Option<f32>,
+    /// The distance of the focal plane from the screen
+    focal_length: Option<f32>,
 }
 
 #[pymethods]
 impl Camera {
     #[new]
-    pub fn new(normal: Ray, x: Point, y: Point, distance: f32) -> Self {
+    pub fn new(normal: Ray, width: f32, height: f32, distance: f32, aperture: Option<f32>, focal_length: Option<f32>) -> Self {
+        let x0 = normal.direction.perpendicular();
+        let x = width * x0;
+        let y = height * normal.direction.cross(x);
         Camera {
             normal,
             x,
             y,
             distance,
+            aperture,
+            focal_length
         }
     }
+}
 
+impl Camera {
     /// Returns a ray for a given point of the screen
     ///
     /// # Arguments
     ///
     /// * `x` - the fractional position along the screen width
     /// * `y` - the fractional position along the screen height
-    pub fn view(&self, x: f32, y: f32) -> Ray {
+    /// * `rng` - the random number generator to use
+    pub fn view(&self, x: f32, y: f32, rng: &mut ThreadRng) -> Ray {
         let base = self.normal.base + (x - 0.5) * self.x + (y - 0.5) * self.y;
         let direction = base - self.normal.at(-self.distance);
-        Ray::new(base, direction)
+        let ray = Ray::new(base, direction);
+        if self.aperture.is_some() {
+            let focal_point = ray.at(self.focal_length.unwrap() / (direction * self.normal.direction));
+            let direction = focal_point - base;
+            Ray::new(base, direction)
+        } else {
+            ray
+        }
     }
 }
 
@@ -104,15 +123,15 @@ impl Scene {
             let reflected = ray.direction - 2.0 * normal * (normal * ray.direction);
             let reflection = Ray::new(
                 impact,
-                (reflected + material.hardness * reflected.randomize(&mut rng)).normalized(),
+                (reflected + material.hardness * reflected.randomize(rng)).normalized(),
             );
-            intensity += material.specularity * self.bounce(&reflection, depth - 1, Some(index), &mut rng);
+            intensity += material.specularity * self.bounce(&reflection, depth - 1, Some(index), rng);
         }
 
         if material.diffusion > 0.0 {
             let scatter = Ray::new(impact, normal.randomize(&mut rng));
             intensity +=
-                material.color * material.diffusion * self.bounce(&scatter, depth - 1, Some(index), &mut rng);
+                material.color * material.diffusion * self.bounce(&scatter, depth - 1, Some(index), rng);
         }
 
         if material.refraction > 0.0 {
@@ -165,11 +184,12 @@ impl Scene {
     /// * `x` - the fractional position along the width of the screen
     /// * `y` - the fractional position along the height of the screen
     fn render_point(&self, x: f32, y: f32) -> [u8; 3] {
-        let ray = self.camera.view(x, y);
         let mut rng = thread_rng();
 
         let intensity = (0..self.samples)
-            .fold(BLACK, |sum, _i| sum + self.bounce(&ray, self.bounces, None, &mut rng))
+            .fold(BLACK, |sum, _i| {
+                let ray = self.camera.view(x, y, &mut rng);
+                sum + self.bounce(&ray, self.bounces, None, &mut rng)})
             / self.samples as f32;
 
         [
@@ -211,12 +231,14 @@ mod tests {
         let normal = Ray::new(Point::new(0.0, 0.0, -1.0), Point::new(0.0, 0.0, 1.0));
         let x = Point::new(2.0, 0.0, 0.0);
         let y = Point::new(0.0, 2.0, 0.0);
-        let c = Camera::new(normal, x, y, 2.0);
+        let c = Camera::new(normal, x, y, 2.0, None, None);
+
+        let mut rng = thread_rng();
 
         let corner_ray = Ray::new(Point::new(1.0, 1.0, -1.0), Point::new(0.5, 0.5, 1.0));
-        assert_eq!(c.view(1.0, 1.0), corner_ray);
+        assert_eq!(c.view(1.0, 1.0, &mut rng), corner_ray);
 
         let edge_ray = Ray::new(Point::new(0.0, 1.0, -1.0), Point::new(0.0, 0.5, 1.0));
-        assert_eq!(c.view(0.5, 1.0), edge_ray);
+        assert_eq!(c.view(0.5, 1.0, &mut rng), edge_ray);
     }
 }
