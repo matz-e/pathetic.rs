@@ -1,2 +1,5 @@
+[packages]
+numpy = "*"
+
 [dev-packages]
 maturin = ">=0.8.1"

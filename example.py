@@ -1,9 +1,7 @@
 from pathetic import Point, Color, Ray, Material, Camera, Rhomboid, Sphere, render
 
 normal = Ray(Point(0.0, 0.0, -10.0), Point(0.0, 0.0, 5.0))
-x = Point(0.7, 0.0, 0.0)
-y = Point(0.0, 0.7, 0.0)
-camera = Camera(normal, x, y, 2.0)
+camera = Camera(normal, 0.7, 0.7, 2.0)
 
 red = Material(0.5, 0.0, 1.0, 0.0, 0.0, Color(1.0, 0.0, 0.0))
 green = Material(0.0, 0.0, 1.0, 0.0, 0.0, Color(0.5, 1.0, 0.5))
