@@ -99,7 +99,7 @@ impl Point {
     /// # Arguments
     ///
     /// * `rng` - The random number generator to use
-    pub fn randomize(self, rng: &mut ThreadRng) -> Point {
+    pub fn randomize(self, rng: &mut dyn RngCore) -> Point {
         let a = self.perpendicular();
         let b = self.cross(a);
         let mut x = 2.0;

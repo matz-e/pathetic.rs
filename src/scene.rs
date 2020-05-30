@@ -50,7 +50,7 @@ impl Camera {
     /// * `x` - the fractional position along the screen width
     /// * `y` - the fractional position along the screen height
     /// * `rng` - the random number generator to use
-    pub fn view(&self, x: f32, y: f32, rng: &mut ThreadRng) -> Ray {
+    pub fn view(&self, x: f32, y: f32, rng: &mut dyn RngCore) -> Ray {
         let base = self.normal.base + (x - 0.5) * self.x + (y - 0.5) * self.y;
         let direction = base - self.normal.at(-self.distance);
         let ray = Ray::new(base, direction);
@@ -101,7 +101,7 @@ impl Scene {
         r0 + (1.0 - r0) * (1.0 - cos_in).powi(5)
     }
 
-    fn bounce(&self, ray: &Ray, depth: usize, skip: Option<usize>, mut rng: &mut ThreadRng) -> Color {
+    fn bounce(&self, ray: &Ray, depth: usize, skip: Option<usize>, mut rng: &mut dyn RngCore) -> Color {
         if depth == 0 {
             return BLACK;
         }
