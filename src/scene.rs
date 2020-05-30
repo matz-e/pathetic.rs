@@ -28,7 +28,14 @@ pub struct Camera {
 #[pymethods]
 impl Camera {
     #[new]
-    pub fn new(normal: Ray, width: f32, height: f32, distance: f32, aperture: Option<f32>, focal_length: Option<f32>) -> Self {
+    pub fn new(
+        normal: Ray,
+        width: f32,
+        height: f32,
+        distance: f32,
+        aperture: Option<f32>,
+        focal_length: Option<f32>,
+    ) -> Self {
         let x = -width * normal.direction.cross(UNIT_Y).normalized();
         let y = height * normal.direction.cross(UNIT_X).normalized();
         Camera {
@@ -37,7 +44,7 @@ impl Camera {
             y,
             distance,
             aperture,
-            focal_length
+            focal_length,
         }
     }
 }
@@ -55,7 +62,8 @@ impl Camera {
         let direction = base - self.normal.at(-self.distance);
         let ray = Ray::new(base, direction);
         if self.aperture.is_some() {
-            let focal_point = ray.at(self.focal_length.unwrap() / (direction * self.normal.direction));
+            let focal_point =
+                ray.at(self.focal_length.unwrap() / (direction * self.normal.direction));
             let direction = focal_point - base;
             Ray::new(base, direction)
         } else {
@@ -101,7 +109,13 @@ impl Scene {
         r0 + (1.0 - r0) * (1.0 - cos_in).powi(5)
     }
 
-    fn bounce(&self, ray: &Ray, depth: usize, skip: Option<usize>, mut rng: &mut dyn RngCore) -> Color {
+    fn bounce(
+        &self,
+        ray: &Ray,
+        depth: usize,
+        skip: Option<usize>,
+        mut rng: &mut dyn RngCore,
+    ) -> Color {
         if depth == 0 {
             return BLACK;
         }
@@ -124,13 +138,15 @@ impl Scene {
                 impact,
                 (reflected + material.hardness * reflected.randomize(rng)).normalized(),
             );
-            intensity += material.specularity * self.bounce(&reflection, depth - 1, Some(index), rng);
+            intensity +=
+                material.specularity * self.bounce(&reflection, depth - 1, Some(index), rng);
         }
 
         if material.diffusion > 0.0 {
             let scatter = Ray::new(impact, normal.randomize(&mut rng));
-            intensity +=
-                material.color * material.diffusion * self.bounce(&scatter, depth - 1, Some(index), rng);
+            intensity += material.color
+                * material.diffusion
+                * self.bounce(&scatter, depth - 1, Some(index), rng);
         }
 
         if material.refraction > 0.0 {
@@ -143,7 +159,8 @@ impl Scene {
             let cos_out_sqr = 1.0 - n_frac * n_frac * (1.0 - cos_in * cos_in);
             let reflection = Ray::new(impact, ray.direction - 2.0 * normal * cos_in);
             if cos_out_sqr < 0.0 {
-                intensity += material.refraction * self.bounce(&reflection, depth - 1, Some(index), &mut rng);
+                intensity += material.refraction
+                    * self.bounce(&reflection, depth - 1, Some(index), &mut rng);
             } else {
                 let in_plane = (ray.direction - normal * cos_in) * n_frac;
                 let along_normal =
@@ -185,11 +202,10 @@ impl Scene {
     fn render_point(&self, x: f32, y: f32) -> [u8; 3] {
         let mut rng = thread_rng();
 
-        let intensity = (0..self.samples)
-            .fold(BLACK, |sum, _i| {
-                let ray = self.camera.view(x, y, &mut rng);
-                sum + self.bounce(&ray, self.bounces, None, &mut rng)})
-            / self.samples as f32;
+        let intensity = (0..self.samples).fold(BLACK, |sum, _i| {
+            let ray = self.camera.view(x, y, &mut rng);
+            sum + self.bounce(&ray, self.bounces, None, &mut rng)
+        }) / self.samples as f32;
 
         [
             (255.0 * intensity.r) as u8,

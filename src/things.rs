@@ -345,7 +345,7 @@ pub struct Triangle {
 impl Triangle {
     #[new]
     pub fn new(a: Point, b: Point, c: Point, material: Material) -> Triangle {
-        Triangle { a, b, c, material, }
+        Triangle { a, b, c, material }
     }
 }
 
@@ -359,7 +359,7 @@ impl Thing for Triangle {
         let h = ray.direction.cross(y);
         let a = x * h;
         if a.abs() < EPSILON {
-            return None;  // parallel
+            return None; // parallel
         }
         let s = ray.base - self.a;
         let u = s * h / a;
