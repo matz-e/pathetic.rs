@@ -12,6 +12,7 @@ crate-type = ["cdylib"]
 [dependencies]
 image = "*"
 rand = "*"
+rand_xoshiro = "*"
 rayon = "*"
 
 pathetic_derive = { path = "pathetic_derive" }

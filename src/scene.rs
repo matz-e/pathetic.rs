@@ -1,10 +1,13 @@
 extern crate image;
 extern crate rand;
+extern crate rand_xoshiro;
 extern crate rayon;
 
 use crate::things::*;
 use pyo3::prelude::*;
 use rand::prelude::*;
+use rand_xoshiro::rand_core::SeedableRng;
+use rand_xoshiro::Xoshiro256Plus;
 use rayon::prelude::*;
 use std::error::Error;
 
@@ -199,9 +202,8 @@ impl Scene {
     ///
     /// * `x` - the fractional position along the width of the screen
     /// * `y` - the fractional position along the height of the screen
-    fn render_point(&self, x: f32, y: f32) -> [u8; 3] {
-        let mut rng = thread_rng();
-
+    /// * `rng` - the random number generator to use
+    fn render_point(&self, x: f32, y: f32, mut rng: &mut dyn RngCore) -> [u8; 3] {
         let intensity = (0..self.samples).fold(BLACK, |sum, _i| {
             let ray = self.camera.view(x, y, &mut rng);
             sum + self.bounce(&ray, self.bounces, None, &mut rng)
@@ -228,8 +230,9 @@ impl Scene {
             .enumerate_pixels_mut()
             .par_bridge()
             .for_each(|(x, y, pixel)| {
+                let mut rng = Xoshiro256Plus::seed_from_u64((x as u64) << 32 | (y as u64 & 0xffffffff));
                 *pixel = image::Rgb(
-                    self.render_point(x as f32 / width as f32, y as f32 / height as f32),
+                    self.render_point(x as f32 / width as f32, y as f32 / height as f32, &mut rng),
                 );
             });
         imgbuf.save(filename)?;
