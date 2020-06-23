@@ -13,6 +13,23 @@ use std::error::Error;
 
 #[pyclass]
 #[derive(Clone)]
+pub struct Lens {
+    /// The distance of the focal plane from the screen
+    pub focal_length: f32,
+    /// The radius of the aperture
+    pub aperture: f32,
+}
+
+#[pymethods]
+impl Lens {
+    #[new]
+    pub fn new(focal_length: f32, aperture: f32) -> Self {
+        Lens { focal_length, aperture }
+    }
+}
+
+#[pyclass]
+#[derive(Clone)]
 pub struct Camera {
     /// The normal vector of the plain of the screen
     normal: Ray,
@@ -22,10 +39,8 @@ pub struct Camera {
     y: Point,
     /// The distance of the eye from the screen
     distance: f32,
-    /// The radius of the aperture
-    aperture: Option<f32>,
-    /// The distance of the focal plane from the screen
-    focal_length: Option<f32>,
+    /// An optional lens
+    lens: Option<Lens>,
 }
 
 #[pymethods]
@@ -36,8 +51,7 @@ impl Camera {
         width: f32,
         height: f32,
         distance: f32,
-        aperture: Option<f32>,
-        focal_length: Option<f32>,
+        lens: Option<Lens>,
     ) -> Self {
         let x = -width * normal.direction.cross(UNIT_Y).normalized();
         let y = height * normal.direction.cross(UNIT_X).normalized();
@@ -46,8 +60,7 @@ impl Camera {
             x,
             y,
             distance,
-            aperture,
-            focal_length,
+            lens,
         }
     }
 }
@@ -64,9 +77,9 @@ impl Camera {
         let base = self.normal.base + (x - 0.5) * self.x + (y - 0.5) * self.y;
         let direction = base - self.normal.at(-self.distance);
         let ray = Ray::new(base, direction);
-        if self.aperture.is_some() {
+        if let Some(lens) = &self.lens {
             let focal_point =
-                ray.at(self.focal_length.unwrap() / (direction * self.normal.direction));
+                ray.at(lens.focal_length / (direction * self.normal.direction));
             let direction = focal_point - base;
             Ray::new(base, direction)
         } else {
@@ -247,7 +260,7 @@ mod tests {
     #[test]
     fn camera_rays() {
         let normal = Ray::new(Point::new(0.0, 0.0, -1.0), Point::new(0.0, 0.0, 1.0));
-        let c = Camera::new(normal, 2.0, 2.0, 2.0, None, None);
+        let c = Camera::new(normal, 2.0, 2.0, 2.0, None);
 
         let mut rng = thread_rng();
 
