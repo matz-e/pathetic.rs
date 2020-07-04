@@ -15,16 +15,16 @@ use std::error::Error;
 #[derive(Clone)]
 pub struct Lens {
     /// The distance of the focal plane from the screen
-    pub focal_length: f32,
-    /// The radius of the aperture
+    pub focus_distance: f32,
+    /// The aperture_radius the lens is set to
     pub aperture: f32,
 }
 
 #[pymethods]
 impl Lens {
     #[new]
-    pub fn new(focal_length: f32, aperture: f32) -> Self {
-        Lens { focal_length, aperture }
+    pub fn new(focus_distance: f32, aperture: f32) -> Self {
+        Lens { focus_distance, aperture }
     }
 }
 
@@ -79,8 +79,17 @@ impl Camera {
         let ray = Ray::new(base, direction);
         if let Some(lens) = &self.lens {
             let focal_point =
-                ray.at(lens.focal_length / (direction * self.normal.direction));
-            let direction = focal_point - base;
+                ray.at(lens.focus_distance / (direction * self.normal.direction));
+            let mut x = 1.0;
+            let mut y = 1.0;
+            let dist = rand::distributions::Uniform::new_inclusive(-1.0, 1.0);
+            while x * x + y * y > 1.0 {
+                x = rng.sample(dist);
+                y = rng.sample(dist);
+            }
+            x *= lens.aperture;
+            y *= lens.aperture;
+            let direction = focal_point - (base + x * self.x + y * self.y);
             Ray::new(base, direction)
         } else {
             ray

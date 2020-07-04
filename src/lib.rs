@@ -19,6 +19,7 @@ fn pathetic(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<Triangle>()?;
 
     m.add_class::<Camera>()?;
+    m.add_class::<Lens>()?;
 
     #[pyfn(m, "render")]
     fn render(
