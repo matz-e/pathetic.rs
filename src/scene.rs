@@ -1,9 +1,11 @@
 extern crate image;
+extern crate indicatif;
 extern crate rand;
 extern crate rand_xoshiro;
 extern crate rayon;
 
 use crate::things::*;
+use indicatif::{ParallelProgressIterator, ProgressBar, ProgressStyle};
 use pyo3::prelude::*;
 use rand::prelude::*;
 use rand_xoshiro::rand_core::SeedableRng;
@@ -24,7 +26,10 @@ pub struct Lens {
 impl Lens {
     #[new]
     pub fn new(focus_distance: f32, aperture: f32) -> Self {
-        Lens { focus_distance, aperture }
+        Lens {
+            focus_distance,
+            aperture,
+        }
     }
 }
 
@@ -46,13 +51,7 @@ pub struct Camera {
 #[pymethods]
 impl Camera {
     #[new]
-    pub fn new(
-        normal: Ray,
-        width: f32,
-        height: f32,
-        distance: f32,
-        lens: Option<Lens>,
-    ) -> Self {
+    pub fn new(normal: Ray, width: f32, height: f32, distance: f32, lens: Option<Lens>) -> Self {
         let x = -width * normal.direction.cross(UNIT_Y).normalized();
         let y = height * normal.direction.cross(UNIT_X).normalized();
         Camera {
@@ -78,8 +77,7 @@ impl Camera {
         let direction = base - self.normal.at(-self.distance);
         let ray = Ray::new(base, direction);
         if let Some(lens) = &self.lens {
-            let focal_point =
-                ray.at(lens.focus_distance / (direction * self.normal.direction));
+            let focal_point = ray.at(lens.focus_distance / (direction * self.normal.direction));
             let mut x = 1.0;
             let mut y = 1.0;
             let dist = rand::distributions::Uniform::new_inclusive(-1.0, 1.0);
@@ -248,14 +246,25 @@ impl Scene {
         let width = (dpi as f32 * self.camera.x.norm()) as u32;
         let height = (dpi as f32 * self.camera.y.norm()) as u32;
         let mut imgbuf: image::RgbImage = image::ImageBuffer::new(width, height);
+        let bar = ProgressBar::new(width as u64 * height as u64);
+        bar.set_style(
+            ProgressStyle::default_bar()
+                .template("{spinner} [{elapsed_precise}] [{wide_bar}] ({eta})")
+                .progress_chars("=> "),
+        );
+
         imgbuf
             .enumerate_pixels_mut()
             .par_bridge()
+            .progress_with(bar)
             .for_each(|(x, y, pixel)| {
-                let mut rng = Xoshiro256Plus::seed_from_u64((x as u64) << 32 | (y as u64 & 0xffffffff));
-                *pixel = image::Rgb(
-                    self.render_point(x as f32 / width as f32, y as f32 / height as f32, &mut rng),
-                );
+                let mut rng =
+                    Xoshiro256Plus::seed_from_u64((x as u64) << 32 | (y as u64 & 0xffffffff));
+                *pixel = image::Rgb(self.render_point(
+                    x as f32 / width as f32,
+                    y as f32 / height as f32,
+                    &mut rng,
+                ));
             });
         imgbuf.save(filename)?;
         Ok(())

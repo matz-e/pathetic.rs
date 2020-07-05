@@ -14,8 +14,9 @@ image = "*"
 rand = "*"
 rand_xoshiro = "*"
 rayon = "*"
+indicatif = {version = "*", features = ["rayon"]}
 
-pathetic_derive = { path = "pathetic_derive" }
+pathetic_derive = {path = "pathetic_derive"}
 
 [dependencies.pyo3]
 version = "0.9.2"
