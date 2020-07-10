@@ -155,6 +155,31 @@ impl Color {
     pub fn get_b(&self) -> PyResult<f32> {
         Ok(self.b)
     }
+
+    #[staticmethod]
+    pub fn black() -> Self {
+        Color::new(0.0, 0.0, 0.0)
+    }
+
+    #[staticmethod]
+    pub fn white() -> Self {
+        Color::new(1.0, 1.0, 1.0)
+    }
+
+    #[staticmethod]
+    pub fn red() -> Self {
+        Color::new(1.0, 0.0, 0.0)
+    }
+
+    #[staticmethod]
+    pub fn green() -> Self {
+        Color::new(0.0, 1.0, 0.0)
+    }
+
+    #[staticmethod]
+    pub fn blue() -> Self {
+        Color::new(0.0, 0.0, 1.0)
+    }
 }
 
 impl ops::Mul<Color> for Color {
@@ -186,12 +211,6 @@ pub static UNIT_Z: Point = Point {
     z: 1.0,
 };
 
-pub static BLACK: Color = Color {
-    r: 0.0,
-    g: 0.0,
-    b: 0.0,
-};
-
 /// Properties of objects in a scene
 #[pyclass]
 #[derive(Clone, Copy)]
@@ -221,6 +240,18 @@ impl Material {
             diffusion,
             refraction,
             emittance,
+            color,
+        }
+    }
+
+    #[staticmethod]
+    pub fn light(color: Color) -> Self {
+        Material {
+            specularity: 0.0,
+            hardness: 0.0,
+            diffusion: 0.0,
+            refraction: 0.0,
+            emittance: 1.0,
             color,
         }
     }
@@ -532,7 +563,7 @@ mod tests {
 
     #[test]
     fn ray_hits_sphere() {
-        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, BLACK);
+        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, Color::black());
         let r = Ray::new(Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0));
 
         let s = Sphere::new(Point::new(1.0, 0.0, 0.0), 0.5, m);
@@ -553,7 +584,7 @@ mod tests {
 
     #[test]
     fn ray_misses_sphere() {
-        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, BLACK);
+        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, Color::black());
         let r = Ray::new(Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0));
         let s = Sphere::new(Point::new(-1.0, 0.0, 0.0), 0.5, m);
         assert_eq!(s.hit_by(&r), None);
@@ -565,7 +596,7 @@ mod tests {
 
     #[test]
     fn ray_hits_triangle() {
-        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, BLACK);
+        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, Color::black());
         let r = Ray::new(-UNIT_X, UNIT_X);
         let a = Point::new(5.0, -1.0, -1.0);
         let t = Triangle::new(a, a + 2.0 * UNIT_Y, a + 2.0 * UNIT_Z, m);
@@ -578,7 +609,7 @@ mod tests {
 
     #[test]
     fn ray_misses_triangle() {
-        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, BLACK);
+        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, Color::black());
         let r = Ray::new(-UNIT_X, UNIT_X);
         let a = Point::new(5.0, -1.9, -1.9);
         let t = Triangle::new(a, a + 2.0 * UNIT_Y, a + 2.0 * UNIT_Z, m);
@@ -592,7 +623,7 @@ mod tests {
 
     #[test]
     fn ray_hits_rectangle() {
-        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, BLACK);
+        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, Color::black());
         let r = Ray::new(-UNIT_X, UNIT_X);
         let r2 = Rhomboid::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
         assert_eq!(r2.hit_by(&r), Some(6.0));
@@ -612,7 +643,7 @@ mod tests {
 
     #[test]
     fn ray_misses_rectangle() {
-        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, BLACK);
+        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, Color::black());
         let r = Ray::new(ORIGIN, -UNIT_X);
         let r2 = Rhomboid::new(Point::new(5.0, -1.0, -1.0), 2.0 * UNIT_Y, 2.0 * UNIT_Z, m);
         assert_eq!(r2.hit_by(&r), None);
@@ -628,7 +659,7 @@ mod tests {
 
     #[test]
     fn ray_intersects() {
-        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, BLACK);
+        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, Color::black());
         let r = Ray::new(ORIGIN, UNIT_Z);
 
         let things: Vec<Box<dyn Thing + Sync + 'static>> = vec![
@@ -646,7 +677,7 @@ mod tests {
 
     #[test]
     fn normal_for_rectangle() {
-        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, BLACK);
+        let m = Material::new(0.0, 0.0, 0.0, 0.0, 0.0, Color::black());
         let r = Rhomboid::new(ORIGIN, 1.0 * UNIT_Y, 1.0 * UNIT_Z, m);
         let n = r.normal(&ORIGIN, &UNIT_X);
         assert_eq!(n, UNIT_X);

@@ -140,12 +140,12 @@ impl Scene {
         mut rng: &mut dyn RngCore,
     ) -> Color {
         if depth == 0 {
-            return BLACK;
+            return Color::black();
         }
 
         let hit = ray.intersect(&self.things, skip);
         if hit.is_none() {
-            return BLACK;
+            return Color::black();
         }
 
         let (distance, index) = hit.unwrap();
@@ -224,7 +224,7 @@ impl Scene {
     /// * `y` - the fractional position along the height of the screen
     /// * `rng` - the random number generator to use
     fn render_point(&self, x: f32, y: f32, mut rng: &mut dyn RngCore) -> [u8; 3] {
-        let intensity = (0..self.samples).fold(BLACK, |sum, _i| {
+        let intensity = (0..self.samples).fold(Color::black(), |sum, _i| {
             let ray = self.camera.view(x, y, &mut rng);
             sum + self.bounce(&ray, self.bounces, None, &mut rng)
         }) / self.samples as f32;
@@ -287,5 +287,24 @@ mod tests {
 
         let edge_ray = Ray::new(Point::new(0.0, 1.0, -1.0), Point::new(0.0, 0.5, 1.0));
         assert_eq!(c.view(0.5, 1.0, &mut rng), edge_ray);
+    }
+
+    #[test]
+    fn basic_scene() {
+        let normal = Ray::new(Point::new(0.0, 0.0, -1.0), Point::new(0.0, 0.0, 1.0));
+        let c = Camera::new(normal, 2.0, 2.0, 2.0, None);
+
+        let mut scene = Scene::new(c, None, None);
+        scene.add(Sphere::new(
+            Point::new(0.0, 0.0, 0.0),
+            0.5,
+            Material::light(Color::white()),
+        ));
+
+        let mut rng = Xoshiro256Plus::seed_from_u64(0);
+        let color = scene.render_point(0.5, 0.5, &mut rng);
+        assert_eq!(color, [255, 255, 255]);
+        let color = scene.render_point(0.0, 0.0, &mut rng);
+        assert_eq!(color, [0, 0, 0]);
     }
 }
